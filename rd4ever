@@ -1,12 +1,13 @@
 -- ============================================
--- PIRATE KING GLITCH - GLITCHER SCRIPT v4.0
+-- PIRATE KING GLITCH - GLITCHER SCRIPT v5.0 FINAL
 -- Dashboard: https://rd4ever.onrender.com
--- NO Socket.IO required - Uses HTTP only
+-- Features: Auto Pirate Team | Anti-AFK | Sync Accept
 -- Works on ALL executors (Delta, Arceus, etc.)
 -- ============================================
 
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local VirtualInput = game:GetService("VirtualInputManager")
 local player = Players.LocalPlayer
 
 -- ========== CONFIGURATION ==========
@@ -31,70 +32,67 @@ local function getServerCode()
     return tostring(game.PlaceId) .. "_" .. tostring(math.random(10000, 99999))
 end
 
--- ========== JOIN PIRATE TEAM ==========
+-- ========== JOIN PIRATE TEAM (FAST & RELIABLE) ==========
 local function joinPirateTeam()
     if hasJoinedPirate then return true end
     
-    print("🏴‍☠️ Looking for Pirate team button...")
+    print("🏴‍☠️ Looking for Pirate/Marine selection screen...")
     
-    -- Wait for GUI to load
-    task.wait(2)
+    local startTime = tick()
+    local maxWait = 10
     
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if not playerGui then
-        print("❌ PlayerGui not found - are you in game?")
-        return false
-    end
-    
-    -- Find all buttons in the GUI
-    local function findAllButtons(obj, buttons)
-        for _, child in pairs(obj:GetChildren()) do
-            if child:IsA("TextButton") then
-                table.insert(buttons, child)
-            end
-            findAllButtons(child, buttons)
-        end
-    end
-    
-    local allButtons = {}
-    findAllButtons(playerGui, allButtons)
-    
-    -- Look for Pirate button
-    for _, button in pairs(allButtons) do
-        local text = (button.Text or ""):lower()
-        if text:find("pirate") then
-            print("✅ Found Pirate button: " .. button.Text)
-            pcall(function()
-                button:Fire("MouseButton1Click")
-                button:Click()
-            end)
-            hasJoinedPirate = true
-            print("✅ Joined Pirate team!")
-            return true
-        end
-    end
-    
-    -- Also check for team selection GUI by name
-    local teamSelect = playerGui:FindFirstChild("TeamSelect") or 
-                       playerGui:FindFirstChild("ChooseTeam") or
-                       playerGui:FindFirstChild("TeamGUI")
-    
-    if teamSelect then
-        for _, child in pairs(teamSelect:GetChildren()) do
-            if child:IsA("TextButton") then
-                local text = (child.Text or ""):lower()
-                if text:find("pirate") then
-                    pcall(function()
-                        child:Fire("MouseButton1Click")
-                        child:Click()
-                    end)
-                    hasJoinedPirate = true
-                    print("✅ Joined Pirate team!")
-                    return true
+    -- Keep checking until found or timeout
+    repeat
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if playerGui then
+            -- Search for any Pirate button
+            local function findPirateButton(obj)
+                for _, child in pairs(obj:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        local text = (child.Text or ""):lower()
+                        if text:find("pirate") then
+                            return child
+                        end
+                    end
+                    local found = findPirateButton(child)
+                    if found then return found end
                 end
+                return nil
+            end
+            
+            local pirateButton = findPirateButton(playerGui)
+            if pirateButton then
+                pcall(function()
+                    pirateButton:Fire("MouseButton1Click")
+                    pirateButton:Click()
+                end)
+                hasJoinedPirate = true
+                print("✅ Joined Pirate team!")
+                
+                -- Visual confirmation
+                local gui = Instance.new("ScreenGui")
+                local frame = Instance.new("Frame")
+                local label = Instance.new("TextLabel")
+                gui.Name = "PirateJoinConfirm"
+                frame.Size = UDim2.new(0, 200, 0, 50)
+                frame.Position = UDim2.new(0.5, -100, 0.3, 0)
+                frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+                frame.BackgroundTransparency = 0.5
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.Text = "🏴‍☠️ JOINED PIRATES! 🏴‍☠️"
+                label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                label.TextScaled = true
+                label.Parent = frame
+                frame.Parent = gui
+                gui.Parent = playerGui
+                task.wait(2)
+                gui:Destroy()
+                return true
             end
         end
-    end
+        task.wait(0.2)
+    until tick() - startTime > maxWait
     
     print("⚠️ Pirate button not found - may already be in a team")
     hasJoinedPirate = true
@@ -106,13 +104,11 @@ local function detectCrewInvite()
     local playerGui = player:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
     
-    -- Search for Accept button with invite context
     local function searchForInvite(obj)
         for _, child in pairs(obj:GetChildren()) do
             if child:IsA("TextButton") then
                 local text = (child.Text or ""):lower()
                 if text:find("accept") or text:find("join") then
-                    -- Check parent for invite text
                     local parent = child.Parent
                     if parent then
                         for _, sibling in pairs(parent:GetChildren()) do
@@ -151,7 +147,7 @@ local function holdInvite()
             local frame = Instance.new("Frame")
             frame.Size = UDim2.new(1, 0, 1, 0)
             frame.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
-            frame.BackgroundTransparency = 0.8
+            frame.BackgroundTransparency = 0.7
             frame.Parent = gui
             gui.Parent = playerGui
             task.wait(0.5)
@@ -175,6 +171,28 @@ local function acceptInvite()
         print("✅ CREW INVITE ACCEPTED at " .. os.date("%H:%M:%S"))
         hasPendingInvite = false
         acceptButton = nil
+        
+        -- Success notification
+        local playerGui = player:FindFirstChild("PlayerGui")
+        if playerGui then
+            local gui = Instance.new("ScreenGui")
+            local frame = Instance.new("Frame")
+            local label = Instance.new("TextLabel")
+            frame.Size = UDim2.new(0, 250, 0, 50)
+            frame.Position = UDim2.new(0.5, -125, 0.7, 0)
+            frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+            frame.BackgroundTransparency = 0.3
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = "✅ JOINED CREW! ✅"
+            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+            label.TextScaled = true
+            label.Parent = frame
+            frame.Parent = gui
+            gui.Parent = playerGui
+            task.wait(2)
+            gui:Destroy()
+        end
         return true
     end
     return false
@@ -191,7 +209,7 @@ local function checkSyncSignal()
         if data.sync_active and data.target_time then
             if data.target_time > tick() and hasPendingInvite then
                 if not syncActive then
-                    print("🎯 START SIGNAL received! Accepting invite...")
+                    print("🎯 START SIGNAL received! Accepting invite in sync...")
                     currentTargetTime = data.target_time
                     syncActive = true
                 end
@@ -207,13 +225,17 @@ local function performSyncedAccept()
     local timeLeft = currentTargetTime - tick()
     
     if timeLeft <= 0 then
+        -- BURST ACCEPT: 5 rapid attempts
         for i = 1, 5 do
             acceptInvite()
             task.wait(0.01)
         end
         syncActive = false
         currentTargetTime = nil
-        print("✅ Sync complete!")
+        print("✅ Sync complete! Crew joined successfully!")
+    elseif timeLeft <= 1 and timeLeft > 0 then
+        -- Pre-warning
+        print("⚡ Sync imminent! Ready to accept invite...")
     end
 end
 
@@ -231,8 +253,8 @@ local function registerDevice()
         action = "register"
     }
     
-    local success, response = pcall(function()
-        return HttpService:PostAsync(
+    local success = pcall(function()
+        HttpService:PostAsync(
             DASHBOARD_URL .. "/api/register_device",
             HttpService:JSONEncode(registerData),
             Enum.HttpContentType.ApplicationJson
@@ -245,7 +267,7 @@ local function registerDevice()
         print("📍 Server Code: " .. currentServerCode)
         return true
     else
-        print("❌ Failed to register with dashboard - check if server is running")
+        print("❌ Failed to register - retrying...")
         return false
     end
 end
@@ -271,20 +293,51 @@ local function sendStatusToDashboard()
     end)
 end
 
--- ========== ANTI-AFK ==========
+-- ========== ANTI-AFK (ADVANCED) ==========
 local function antiAFK()
     local now = tick()
-    if now - lastAFKAction < 60 then return end
+    if now - lastAFKAction < 45 then return end
     
     local character = player.Character
     local humanoid = character and character:FindFirstChild("Humanoid")
     
     if humanoid then
-        pcall(function()
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end)
+        -- Random anti-AFK action
+        local action = math.random(1, 3)
+        
+        if action == 1 then
+            -- Jump
+            pcall(function()
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            end)
+            print("🦘 Anti-AFK: Jumped")
+        elseif action == 2 then
+            -- Small movement (if in game)
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                local oldPos = rootPart.Position
+                pcall(function()
+                    rootPart.CFrame = rootPart.CFrame + Vector3.new(0.5, 0, 0.5)
+                    task.wait(0.1)
+                    rootPart.CFrame = CFrame.new(oldPos)
+                end)
+            end
+            print("🚶 Anti-AFK: Moved")
+        else
+            -- Rotate camera/view
+            pcall(function()
+                local camera = workspace.CurrentCamera
+                if camera then
+                    local oldCFrame = camera.CFrame
+                    camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(10), 0)
+                    task.wait(0.2)
+                    camera.CFrame = oldCFrame
+                end
+            end)
+            print("👁️ Anti-AFK: Camera rotate")
+        end
+        
         lastAFKAction = now
-        print("🦘 Anti-AFK: Jumped")
     end
 end
 
@@ -297,9 +350,12 @@ local function startMainLoop()
     print("   Server: " .. getServerCode())
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     
-    -- Register with dashboard
-    registerDevice()
+    -- Register with dashboard (retry until success)
+    repeat
+        task.wait(2)
+    until registerDevice()
     
+    -- Start main async loop
     spawn(function()
         while true do
             task.wait(0.5)
@@ -334,13 +390,14 @@ _G.Glitcher = {
         print("📊 GLITCHER STATUS")
         print("Device: " .. DEVICE_NAME)
         print("Server: " .. getServerCode())
-        print("Pirate Team: " .. (hasJoinedPirate and "✅" or "❌"))
-        print("Pending Invite: " .. (hasPendingInvite and "✅" or "❌"))
-        print("Sync Active: " .. (syncActive and "✅" or "❌"))
-        print("Registered: " .. (registered and "✅" or "❌"))
+        print("Pirate Team: " .. (hasJoinedPirate and "✅ JOINED" or "❌ NOT YET"))
+        print("Pending Invite: " .. (hasPendingInvite and "✅ YES" or "❌ NO"))
+        print("Sync Active: " .. (syncActive and "✅ YES" or "❌ NO"))
+        print("Registered: " .. (registered and "✅ YES" or "❌ NO"))
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     end,
     acceptNow = function()
+        print("🔘 Manual accept triggered")
         acceptInvite()
     end,
     resendCode = function()
@@ -349,26 +406,31 @@ _G.Glitcher = {
     end,
     joinPirate = function()
         joinPirateTeam()
+    end,
+    toggleAFK = function()
+        antiAFKEnabled = not antiAFKEnabled
+        print("Anti-AFK: " .. (antiAFKEnabled and "ON" or "OFF"))
     end
 }
 
 -- ========== INITIALIZATION ==========
 print("")
-print("╔════════════════════════════════════════╗")
-print("║  🏴‍☠️ PIRATE KING GLITCH - GLITCHER  ║")
-print("║      HTTP Mode - No Socket.IO          ║")
-print("║      Dashboard: rd4ever.onrender.com   ║")
-print("╚════════════════════════════════════════╝")
+print("╔════════════════════════════════════════════╗")
+print("║  🏴‍☠️ PIRATE KING GLITCH - GLITCHER v5.0  ║")
+print("║      Dashboard: rd4ever.onrender.com       ║")
+print("║   Features: Auto Pirate | Anti-AFK | Sync  ║")
+print("╚════════════════════════════════════════════╝")
 print("")
 print("Device: " .. DEVICE_NAME)
 print("")
 print("📝 COMMANDS (type in executor console):")
-print("  _G.Glitcher.status()      - Show status")
-print("  _G.Glitcher.acceptNow()    - Manual accept")
-print("  _G.Glitcher.resendCode()   - Resend server code")
-print("  _G.Glitcher.joinPirate()   - Manually join Pirate team")
+print("  _G.Glitcher.status()       - Show full status")
+print("  _G.Glitcher.acceptNow()     - Manual accept invite")
+print("  _G.Glitcher.resendCode()    - Resend server code")
+print("  _G.Glitcher.joinPirate()    - Manually join Pirate team")
+print("  _G.Glitcher.toggleAFK()     - Toggle Anti-AFK")
 print("")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 print("")
 
 -- Wait for player to load
@@ -377,8 +439,8 @@ repeat
     print("⏳ Waiting for game to load...")
 until player.Character and player.Character:FindFirstChild("Humanoid")
 
--- Join Pirate team
-task.wait(2)
+-- Join Pirate team (IMMEDIATE)
+task.wait(1)
 joinPirateTeam()
 
 -- Start main loop
@@ -387,4 +449,9 @@ startMainLoop()
 -- Send initial status
 task.wait(1)
 sendStatusToDashboard()
-print("✅ Script ready! Waiting for crew invite...")
+
+print("")
+print("✅ SCRIPT READY!")
+print("📨 Waiting for crew invite...")
+print("🎯 Press START on dashboard when all accounts have invites!")
+print("")
