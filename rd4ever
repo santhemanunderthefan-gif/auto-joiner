@@ -1,32 +1,26 @@
 -- ============================================
--- PIRATE KING GLITCH - GLITCHER SCRIPT v3.0 FINAL
+-- PIRATE KING GLITCH - GLITCHER SCRIPT v4.0
 -- Dashboard: https://rd4ever.onrender.com
--- For Mobile Delta Executor
+-- NO Socket.IO required - Uses HTTP only
+-- Works on ALL executors (Delta, Arceus, etc.)
 -- ============================================
 
 local Players = game:GetService("Players")
-local VirtualInput = game:GetService("VirtualInputManager")
 local HttpService = game:GetService("HttpService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 
 -- ========== CONFIGURATION ==========
-local DASHBOARD_URL = "https://rd4ever.onrender.com"  -- YOUR LIVE DASHBOARD
+local DASHBOARD_URL = "https://rd4ever.onrender.com"
 local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId)
-local useHttpPolling = false
-local SOCKET_CONNECTION = nil
-
--- State variables
 local hasPendingInvite = false
 local acceptButton = nil
 local syncActive = false
 local currentTargetTime = nil
 local hasJoinedPirate = false
 local currentServerCode = nil
-
--- Anti-AFK
-local antiAFKEnabled = true
 local lastAFKAction = 0
+local lastStatusUpdate = 0
+local registered = false
 
 -- ========== GET CURRENT SERVER CODE ==========
 local function getServerCode()
@@ -37,44 +31,72 @@ local function getServerCode()
     return tostring(game.PlaceId) .. "_" .. tostring(math.random(10000, 99999))
 end
 
--- ========== JOIN PIRATE TEAM ON STARTUP ==========
+-- ========== JOIN PIRATE TEAM ==========
 local function joinPirateTeam()
     if hasJoinedPirate then return true end
     
-    print("🏴‍☠️ Joining Pirate team...")
+    print("🏴‍☠️ Looking for Pirate team button...")
     
-    for attempt = 1, 10 do
-        local playerGui = player:FindFirstChild("PlayerGui")
-        if playerGui then
-            local function findPirateButton(obj)
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        local text = (child.Text or ""):lower()
-                        if text:find("pirate") then
-                            return child
-                        end
-                    end
-                    local found = findPirateButton(child)
-                    if found then return found end
-                end
-                return nil
-            end
-            
-            local pirateButton = findPirateButton(playerGui)
-            if pirateButton then
-                pcall(function()
-                    pirateButton:Fire("MouseButton1Click")
-                    pirateButton:Click()
-                end)
-                hasJoinedPirate = true
-                print("✅ Joined Pirate team!")
-                return true
-            end
-        end
-        task.wait(1)
+    -- Wait for GUI to load
+    task.wait(2)
+    
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if not playerGui then
+        print("❌ PlayerGui not found - are you in game?")
+        return false
     end
     
-    print("⚠️ Already in Pirate team or button not found")
+    -- Find all buttons in the GUI
+    local function findAllButtons(obj, buttons)
+        for _, child in pairs(obj:GetChildren()) do
+            if child:IsA("TextButton") then
+                table.insert(buttons, child)
+            end
+            findAllButtons(child, buttons)
+        end
+    end
+    
+    local allButtons = {}
+    findAllButtons(playerGui, allButtons)
+    
+    -- Look for Pirate button
+    for _, button in pairs(allButtons) do
+        local text = (button.Text or ""):lower()
+        if text:find("pirate") then
+            print("✅ Found Pirate button: " .. button.Text)
+            pcall(function()
+                button:Fire("MouseButton1Click")
+                button:Click()
+            end)
+            hasJoinedPirate = true
+            print("✅ Joined Pirate team!")
+            return true
+        end
+    end
+    
+    -- Also check for team selection GUI by name
+    local teamSelect = playerGui:FindFirstChild("TeamSelect") or 
+                       playerGui:FindFirstChild("ChooseTeam") or
+                       playerGui:FindFirstChild("TeamGUI")
+    
+    if teamSelect then
+        for _, child in pairs(teamSelect:GetChildren()) do
+            if child:IsA("TextButton") then
+                local text = (child.Text or ""):lower()
+                if text:find("pirate") then
+                    pcall(function()
+                        child:Fire("MouseButton1Click")
+                        child:Click()
+                    end)
+                    hasJoinedPirate = true
+                    print("✅ Joined Pirate team!")
+                    return true
+                end
+            end
+        end
+    end
+    
+    print("⚠️ Pirate button not found - may already be in a team")
     hasJoinedPirate = true
     return true
 end
@@ -84,23 +106,25 @@ local function detectCrewInvite()
     local playerGui = player:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
     
+    -- Search for Accept button with invite context
     local function searchForInvite(obj)
         for _, child in pairs(obj:GetChildren()) do
             if child:IsA("TextButton") then
                 local text = (child.Text or ""):lower()
                 if text:find("accept") or text:find("join") then
+                    -- Check parent for invite text
                     local parent = child.Parent
-                    local parentText = ""
-                    if parent and parent:IsA("Frame") then
+                    if parent then
                         for _, sibling in pairs(parent:GetChildren()) do
                             if sibling:IsA("TextLabel") then
-                                parentText = parentText .. (sibling.Text or ""):lower()
+                                local siblingText = (sibling.Text or ""):lower()
+                                if siblingText:find("invite") or siblingText:find("crew") then
+                                    return child
+                                end
                             end
                         end
                     end
-                    if parentText:find("invite") or parentText:find("crew") then
-                        return child
-                    end
+                    return child
                 end
             end
             local found = searchForInvite(child)
@@ -130,14 +154,14 @@ local function holdInvite()
             frame.BackgroundTransparency = 0.8
             frame.Parent = gui
             gui.Parent = playerGui
-            task.wait(0.3)
+            task.wait(0.5)
             gui:Destroy()
         end
     end
     return hasPendingInvite
 end
 
--- ========== ACCEPT INVITE (SYNCED) ==========
+-- ========== ACCEPT INVITE ==========
 local function acceptInvite()
     if not acceptButton then
         acceptButton = detectCrewInvite()
@@ -151,37 +175,32 @@ local function acceptInvite()
         print("✅ CREW INVITE ACCEPTED at " .. os.date("%H:%M:%S"))
         hasPendingInvite = false
         acceptButton = nil
-        
-        -- Success notification
-        local playerGui = player:FindFirstChild("PlayerGui")
-        if playerGui then
-            local gui = Instance.new("ScreenGui")
-            local frame = Instance.new("Frame")
-            local label = Instance.new("TextLabel")
-            
-            frame.Size = UDim2.new(0, 250, 0, 50)
-            frame.Position = UDim2.new(0.5, -125, 0.8, 0)
-            frame.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-            frame.BackgroundTransparency = 0.3
-            
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-            label.Text = "✅ Joined Crew!"
-            label.TextScaled = true
-            
-            label.Parent = frame
-            frame.Parent = gui
-            gui.Parent = playerGui
-            task.wait(2)
-            gui:Destroy()
-        end
         return true
     end
     return false
 end
 
--- ========== SYNC EXECUTION ==========
+-- ========== CHECK SYNC SIGNAL FROM DASHBOARD ==========
+local function checkSyncSignal()
+    local success, response = pcall(function()
+        return HttpService:GetAsync(DASHBOARD_URL .. "/api/sync_status", true)
+    end)
+    
+    if success and response then
+        local data = HttpService:JSONDecode(response)
+        if data.sync_active and data.target_time then
+            if data.target_time > tick() and hasPendingInvite then
+                if not syncActive then
+                    print("🎯 START SIGNAL received! Accepting invite...")
+                    currentTargetTime = data.target_time
+                    syncActive = true
+                end
+            end
+        end
+    end
+end
+
+-- ========== PERFORM SYNCED ACCEPT ==========
 local function performSyncedAccept()
     if not syncActive or not currentTargetTime then return end
     
@@ -194,25 +213,40 @@ local function performSyncedAccept()
         end
         syncActive = false
         currentTargetTime = nil
+        print("✅ Sync complete!")
     end
 end
 
--- ========== ANTI-AFK (Mobile Optimized) ==========
-local function antiAFK()
-    if not antiAFKEnabled then return end
+-- ========== REGISTER DEVICE WITH DASHBOARD ==========
+local function registerDevice()
+    if registered then return true end
     
-    local now = tick()
-    if now - lastAFKAction < 60 then return end
+    currentServerCode = getServerCode()
     
-    local character = player.Character
-    local humanoid = character and character:FindFirstChild("Humanoid")
+    local registerData = {
+        device = DEVICE_NAME,
+        server_code = currentServerCode,
+        has_invite = false,
+        joined_pirate = hasJoinedPirate,
+        action = "register"
+    }
     
-    if humanoid then
-        pcall(function()
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        end)
-        lastAFKAction = now
-        print("🦘 Anti-AFK: Jumped")
+    local success, response = pcall(function()
+        return HttpService:PostAsync(
+            DASHBOARD_URL .. "/api/register_device",
+            HttpService:JSONEncode(registerData),
+            Enum.HttpContentType.ApplicationJson
+        )
+    end)
+    
+    if success then
+        registered = true
+        print("✅ Registered with dashboard: " .. DEVICE_NAME)
+        print("📍 Server Code: " .. currentServerCode)
+        return true
+    else
+        print("❌ Failed to register with dashboard - check if server is running")
+        return false
     end
 end
 
@@ -228,117 +262,66 @@ local function sendStatusToDashboard()
         timestamp = os.time()
     }
     
-    if SOCKET_CONNECTION and not useHttpPolling then
-        pcall(function()
-            SOCKET_CONNECTION:emit("update_status", statusData)
-        end)
-    elseif useHttpPolling then
-        pcall(function()
-            HttpService:PostAsync(DASHBOARD_URL .. "/api/update_status",
-                HttpService:JSONEncode(statusData),
-                Enum.HttpContentType.ApplicationJson)
-        end)
-    end
-    
-    print("📡 Status - Server: " .. string.sub(currentServerCode, 1, 15) .. "... | Invite: " .. (hasPendingInvite and "YES" or "NO"))
+    pcall(function()
+        HttpService:PostAsync(
+            DASHBOARD_URL .. "/api/update_status",
+            HttpService:JSONEncode(statusData),
+            Enum.HttpContentType.ApplicationJson
+        )
+    end)
 end
 
--- ========== WEBSOCKET SETUP ==========
-local function setupWebSocket()
-    local success, socket = pcall(function()
-        local socketio = require(ReplicatedStorage:WaitForChild("SocketIO"))
-        if not socketio then
-            error("SocketIO not found")
-        end
-        return socketio.connect(DASHBOARD_URL)
-    end)
+-- ========== ANTI-AFK ==========
+local function antiAFK()
+    local now = tick()
+    if now - lastAFKAction < 60 then return end
     
-    if not success then
-        useHttpPolling = true
-        print("⚠️ WebSocket unavailable, using HTTP polling mode")
-        startMainLoop()
-        return
-    end
+    local character = player.Character
+    local humanoid = character and character:FindFirstChild("Humanoid")
     
-    SOCKET_CONNECTION = socket
-    
-    SOCKET_CONNECTION:on("connect", function()
-        print("✅ Connected to dashboard: " .. DASHBOARD_URL)
-        SOCKET_CONNECTION:emit("register", {device = DEVICE_NAME})
-        SOCKET_CONNECTION:emit("request_approval", {device = DEVICE_NAME})
-        task.wait(1)
-        sendStatusToDashboard()
-    end)
-    
-    SOCKET_CONNECTION:on("click_at", function(data)
-        if hasPendingInvite then
-            print("🎯 START SIGNAL! Accepting invite...")
-            currentTargetTime = data.target_time
-            syncActive = true
-        else
-            print("⚠️ START signal but NO pending invite!")
-        end
-    end)
-    
-    SOCKET_CONNECTION:on("stop_clicking", function()
-        syncActive = false
-        currentTargetTime = nil
-        print("🛑 Sync stopped")
-    end)
-    
-    SOCKET_CONNECTION:on("approval_granted", function()
-        print("✅ Device approved!")
-    end)
-    
-    SOCKET_CONNECTION:emit("request_approval", {device = DEVICE_NAME})
-end
-
--- ========== HTTP POLLING FALLBACK ==========
-local function httpPollingLoop()
-    while useHttpPolling do
-        task.wait(1)
-        
-        local success, response = pcall(function()
-            return HttpService:GetAsync(DASHBOARD_URL .. "/api/sync_status", true)
+    if humanoid then
+        pcall(function()
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end)
-        
-        if success and response then
-            local data = HttpService:JSONDecode(response)
-            if data.sync_active and data.target_time > tick() and hasPendingInvite then
-                currentTargetTime = data.target_time
-                syncActive = true
-                print("🎯 Sync via HTTP!")
-            end
-        end
-        
-        if tick() % 3 < 1 then
-            sendStatusToDashboard()
-        end
+        lastAFKAction = now
+        print("🦘 Anti-AFK: Jumped")
     end
 end
 
 -- ========== MAIN LOOP ==========
 local function startMainLoop()
-    print("🚀 GLITCHER ACTIVE")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🚀 GLITCHER ACTIVE - HTTP MODE")
     print("   Device: " .. DEVICE_NAME)
     print("   Dashboard: " .. DASHBOARD_URL)
     print("   Server: " .. getServerCode())
-    print("")
-    print("⏳ Waiting for crew invite...")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     
-    if useHttpPolling then
-        spawn(httpPollingLoop)
-    end
+    -- Register with dashboard
+    registerDevice()
     
     spawn(function()
         while true do
             task.wait(0.5)
+            
+            -- Check for invites
             holdInvite()
-            if tick() % 3 < 0.5 and not useHttpPolling then
-                sendStatusToDashboard()
+            
+            -- Check for sync signal every second
+            if tick() % 1 < 0.5 then
+                checkSyncSignal()
             end
+            
+            -- Perform synced accept
             performSyncedAccept()
+            
+            -- Send status every 5 seconds
+            if tick() - lastStatusUpdate >= 5 then
+                sendStatusToDashboard()
+                lastStatusUpdate = tick()
+            end
+            
+            -- Anti-AFK
             antiAFK()
         end
     end)
@@ -350,11 +333,11 @@ _G.Glitcher = {
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print("📊 GLITCHER STATUS")
         print("Device: " .. DEVICE_NAME)
-        print("Dashboard: " .. DASHBOARD_URL)
-        print("Server: " .. (currentServerCode or getServerCode()))
+        print("Server: " .. getServerCode())
         print("Pirate Team: " .. (hasJoinedPirate and "✅" or "❌"))
         print("Pending Invite: " .. (hasPendingInvite and "✅" or "❌"))
         print("Sync Active: " .. (syncActive and "✅" or "❌"))
+        print("Registered: " .. (registered and "✅" or "❌"))
         print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     end,
     acceptNow = function()
@@ -362,6 +345,10 @@ _G.Glitcher = {
     end,
     resendCode = function()
         sendStatusToDashboard()
+        print("📡 Status resent to dashboard")
+    end,
+    joinPirate = function()
+        joinPirateTeam()
     end
 }
 
@@ -369,25 +356,35 @@ _G.Glitcher = {
 print("")
 print("╔════════════════════════════════════════╗")
 print("║  🏴‍☠️ PIRATE KING GLITCH - GLITCHER  ║")
+print("║      HTTP Mode - No Socket.IO          ║")
 print("║      Dashboard: rd4ever.onrender.com   ║")
 print("╚════════════════════════════════════════╝")
 print("")
 print("Device: " .. DEVICE_NAME)
 print("")
 print("📝 COMMANDS (type in executor console):")
-print("  _G.Glitcher.status()     - Show status")
-print("  _G.Glitcher.acceptNow()   - Manual accept")
-print("  _G.Glitcher.resendCode()  - Resend server code")
+print("  _G.Glitcher.status()      - Show status")
+print("  _G.Glitcher.acceptNow()    - Manual accept")
+print("  _G.Glitcher.resendCode()   - Resend server code")
+print("  _G.Glitcher.joinPirate()   - Manually join Pirate team")
 print("")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 print("")
 
--- Wait for player
-repeat task.wait(0.5) until player.Character and player.Character:FindFirstChild("Humanoid")
+-- Wait for player to load
+repeat 
+    task.wait(1)
+    print("⏳ Waiting for game to load...")
+until player.Character and player.Character:FindFirstChild("Humanoid")
 
--- Start
-joinPirateTeam()
-setupWebSocket()
-startMainLoop()
+-- Join Pirate team
 task.wait(2)
+joinPirateTeam()
+
+-- Start main loop
+startMainLoop()
+
+-- Send initial status
+task.wait(1)
 sendStatusToDashboard()
+print("✅ Script ready! Waiting for crew invite...")
