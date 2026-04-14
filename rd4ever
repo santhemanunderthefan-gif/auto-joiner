@@ -1,61 +1,27 @@
 -- ============================================
--- PIRATE KING GLITCH - COMPLETE SCRIPT
--- White overlay | Auto-join Pirates | Sync JOIN
+-- PIRATE KING GLITCH - CORRECTED ORDER
+-- Join Pirates FIRST, THEN create overlay
 -- ============================================
 
 local player = game.Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
-local VirtualInput = game:GetService("VirtualInputManager")
 
 -- ========== CONFIGURATION ==========
 local DASHBOARD_URL = "https://rd4ever.onrender.com"
 local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId)
 local syncActive = false
 local targetTime = nil
+local overlay = nil
 
--- ========== CREATE WHITE OVERLAY ==========
-local function createWhiteOverlay()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PK_Overlay"
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local whiteFrame = Instance.new("Frame")
-    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-    whiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    whiteFrame.BackgroundTransparency = 0
-    whiteFrame.BorderSizePixel = 0
-    whiteFrame.Parent = screenGui
-    
-    -- Small status text in corner
-    local statusText = Instance.new("TextLabel")
-    statusText.Size = UDim2.new(0, 150, 0, 30)
-    statusText.Position = UDim2.new(0, 10, 1, -40)
-    statusText.BackgroundTransparency = 1
-    statusText.Text = "PK GLITCH READY"
-    statusText.TextColor3 = Color3.fromRGB(0, 0, 0)
-    statusText.TextSize = 14
-    statusText.TextXAlignment = Enum.TextXAlignment.Left
-    statusText.Parent = screenGui
-    
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    return screenGui
-end
-
--- ========== AUTO-JOIN PIRATES (KEEPS CLICKING UNTIL SUCCESS) ==========
+-- ========== JOIN PIRATES FIRST (NO OVERLAY YET) ==========
 local function joinPirates()
     print("[PK] Auto-joining Pirates...")
     
-    local maxAttempts = 50
-    local joined = false
-    
-    for attempt = 1, maxAttempts do
+    for attempt = 1, 30 do
         local playerGui = player:FindFirstChild("PlayerGui")
         if playerGui then
-            -- Search for Pirates button
             local function findPirateButton(obj)
                 for _, child in pairs(obj:GetChildren()) do
-                    -- Check ImageButton (main UI type)
                     if child:IsA("ImageButton") then
                         local textLabel = child:FindFirstChild("TextLabel")
                         if textLabel and textLabel.Text then
@@ -65,7 +31,6 @@ local function joinPirates()
                             end
                         end
                     end
-                    -- Check TextButton
                     if child:IsA("TextButton") then
                         local text = (child.Text or ""):upper()
                         if text:find("PIRATE") or text:find("PIRATES") then
@@ -80,26 +45,34 @@ local function joinPirates()
             
             local pirateButton = findPirateButton(playerGui)
             if pirateButton then
-                -- Click the button
                 pirateButton:Fire("MouseButton1Click")
                 pirateButton:Click()
-                print("[PK] Clicked Pirates button (attempt " .. attempt .. ")")
-                joined = true
-                break
+                print("[PK] Clicked Pirates button!")
+                task.wait(1)
+                return true
             end
         end
         task.wait(0.5)
     end
+    print("[PK] Joined Pirates (or already in team)")
+    return true
+end
+
+-- ========== CREATE WHITE OVERLAY (AFTER JOINING PIRATES) ==========
+local function createWhiteOverlay()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PK_Overlay"
+    screenGui.ResetOnSpawn = false
     
-    if joined then
-        print("[PK] ✅ Successfully joined Pirates!")
-        -- Wait a moment for team selection to register
-        task.wait(2)
-    else
-        print("[PK] ⚠️ Could not find Pirates button - may already be in team")
-    end
+    local whiteFrame = Instance.new("Frame")
+    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+    whiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    whiteFrame.BackgroundTransparency = 0
+    whiteFrame.BorderSizePixel = 0
+    whiteFrame.Parent = screenGui
     
-    return joined
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    return screenGui
 end
 
 -- ========== FIND AND CLICK JOIN BUTTON ==========
@@ -109,7 +82,6 @@ local function clickJoinButton()
     
     local function findJoinButton(obj)
         for _, child in pairs(obj:GetChildren()) do
-            -- Check ImageButton with TextLabel
             if child:IsA("ImageButton") then
                 local textLabel = child:FindFirstChild("TextLabel")
                 if textLabel and textLabel.Text then
@@ -119,7 +91,6 @@ local function clickJoinButton()
                     end
                 end
             end
-            -- Check TextButton
             if child:IsA("TextButton") then
                 local text = (child.Text or ""):lower()
                 if text:find("join") then
@@ -137,7 +108,7 @@ local function clickJoinButton()
     if joinButton then
         joinButton:Fire("MouseButton1Click")
         joinButton:Click()
-        print("[PK] ✅ Clicked JOIN button!")
+        print("[PK] Clicked JOIN!")
         return true
     end
     return false
@@ -155,24 +126,16 @@ local function hasInvite()
                 return true
             end
         end
-        if child:IsA("TextButton") then
-            local text = (child.Text or ""):lower()
-            if text:find("join") then
-                return true
-            end
-        end
     end
     return false
 end
 
 -- ========== REGISTER WITH DASHBOARD ==========
 local function registerDevice()
-    local serverCode = game.JobId
     local data = {
         device = DEVICE_NAME,
-        server_code = serverCode,
+        server_code = game.JobId,
         has_invite = false,
-        joined_pirate = true,
         timestamp = os.time()
     }
     
@@ -183,23 +146,7 @@ local function registerDevice()
             Enum.HttpContentType.ApplicationJson
         )
     end)
-    print("[PK] ✅ Registered with dashboard: " .. DEVICE_NAME)
-    print("[PK] 📍 Server: " .. serverCode)
-end
-
--- ========== UPDATE INVITE STATUS ==========
-local function updateInviteStatus(hasInvite)
-    pcall(function()
-        HttpService:PostAsync(
-            DASHBOARD_URL .. "/api/update_status",
-            HttpService:JSONEncode({
-                device = DEVICE_NAME,
-                has_invite = hasInvite,
-                timestamp = os.time()
-            }),
-            Enum.HttpContentType.ApplicationJson
-        )
-    end)
+    print("[PK] Registered: " .. DEVICE_NAME)
 end
 
 -- ========== CHECK SYNC SIGNAL ==========
@@ -213,7 +160,7 @@ local function checkSyncSignal()
         if data.sync_active and data.target_time then
             if data.target_time > tick() then
                 if not syncActive then
-                    print("[PK] 🎯 START SIGNAL received!")
+                    print("[PK] START signal received!")
                     targetTime = data.target_time
                     syncActive = true
                 end
@@ -223,44 +170,41 @@ local function checkSyncSignal()
 end
 
 -- ========== REMOVE OVERLAY ==========
-local function removeOverlay(overlay)
-    pcall(function() overlay:Destroy() end)
-    print("[PK] Overlay removed")
+local function removeOverlay()
+    if overlay then
+        pcall(function() overlay:Destroy() end)
+        print("[PK] Overlay removed")
+    end
 end
 
--- ========== MAIN ==========
-print("[PK] ╔════════════════════════════════════════╗")
-print("[PK] ║  PIRATE KING GLITCH - SYNC MACHINE    ║")
-print("[PK] ║  White Overlay | Auto Pirates | Sync  ║")
-print("[PK] ╚════════════════════════════════════════╝")
-
--- Create white overlay
-local overlay = createWhiteOverlay()
-print("[PK] ✅ White overlay active")
+-- ========== MAIN (CORRECT ORDER) ==========
+print("[PK] Pirate King Glitch - Starting...")
 
 -- Wait for game to load
 repeat task.wait(1) until player.Character and player.Character:FindFirstChild("Humanoid")
 task.wait(2)
 
--- Auto-join Pirates
+-- STEP 1: Join Pirates FIRST (no overlay yet)
 joinPirates()
 
--- Register with dashboard
+-- STEP 2: Register with dashboard
 registerDevice()
 
--- Wait for crew invite
-print("[PK] 📨 Waiting for crew invite...")
+-- STEP 3: Wait for crew invite
+print("[PK] Waiting for crew invite...")
 repeat
     task.wait(1)
 until hasInvite()
 
-print("[PK] ✅ Crew invite detected!")
-updateInviteStatus(true)
+print("[PK] Crew invite detected!")
 
--- Wait for START signal
-print("[PK] 🎯 Waiting for START signal from dashboard...")
+-- STEP 4: NOW create white overlay (after invite is visible)
+overlay = createWhiteOverlay()
+print("[PK] White overlay active - only invite popup visible")
 
--- Sync loop
+-- STEP 5: Wait for START signal
+print("[PK] Waiting for START signal from dashboard...")
+
 while true do
     checkSyncSignal()
     
@@ -268,18 +212,17 @@ while true do
         local timeLeft = targetTime - tick()
         
         if timeLeft <= 0 then
-            print("[PK] 🔥 EXECUTING SYNC CLICK!")
+            print("[PK] EXECUTING SYNC CLICK!")
             
-            -- Click JOIN multiple times for reliability
             for i = 1, 3 do
                 clickJoinButton()
                 task.wait(0.05)
             end
             
-            print("[PK] ✅ JOIN clicked! Removing overlay...")
+            print("[PK] JOIN clicked!")
             task.wait(1)
-            removeOverlay(overlay)
-            print("[PK] 🎉 Complete! Crew joined successfully!")
+            removeOverlay()
+            print("[PK] Complete!")
             break
         elseif timeLeft <= 1 then
             print("[PK] Syncing in " .. string.format("%.1f", timeLeft) .. "s...")
