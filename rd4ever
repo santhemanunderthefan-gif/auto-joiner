@@ -1,81 +1,96 @@
 -- ============================================
--- PIRATE KING GLITCH - CORRECTED ORDER
--- Join Pirates FIRST, THEN create overlay
+-- PIRATE KING GLITCH - CLICKS THE NPC
+-- The red NPC below "PIRATES" text is the target
 -- ============================================
 
 local player = game.Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
+local VirtualInput = game:GetService("VirtualInputManager")
 
--- ========== CONFIGURATION ==========
 local DASHBOARD_URL = "https://rd4ever.onrender.com"
 local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId)
 local syncActive = false
 local targetTime = nil
 local overlay = nil
 
--- ========== JOIN PIRATES FIRST (NO OVERLAY YET) ==========
-local function joinPirates()
-    print("[PK] Auto-joining Pirates...")
+-- ========== CLICK THE PIRATE NPC ==========
+local function clickPirateNPC()
+    print("[PK] Looking for Pirate NPC...")
     
-    for attempt = 1, 30 do
-        local playerGui = player:FindFirstChild("PlayerGui")
-        if playerGui then
-            local function findPirateButton(obj)
-                for _, child in pairs(obj:GetChildren()) do
-                    if child:IsA("ImageButton") then
-                        local textLabel = child:FindFirstChild("TextLabel")
-                        if textLabel and textLabel.Text then
-                            local text = textLabel.Text:upper()
-                            if text:find("PIRATE") or text:find("PIRATES") then
-                                return child
-                            end
-                        end
+    -- Find all NPCs in the game
+    local function findPirateNPC()
+        -- Check workspace for NPCs
+        local npc = nil
+        
+        -- Method 1: Look for NPC by name
+        for _, child in pairs(workspace:GetChildren()) do
+            if child:IsA("Model") then
+                local name = (child.Name or ""):lower()
+                if name:find("pirate") or name:find("npc") then
+                    -- Find humanoid or clickable part
+                    local humanoid = child:FindFirstChild("Humanoid")
+                    local head = child:FindFirstChild("Head")
+                    if humanoid and head then
+                        return child
                     end
-                    if child:IsA("TextButton") then
-                        local text = (child.Text or ""):upper()
-                        if text:find("PIRATE") or text:find("PIRATES") then
-                            return child
-                        end
-                    end
-                    local found = findPirateButton(child)
-                    if found then return found end
                 end
-                return nil
             end
-            
-            local pirateButton = findPirateButton(playerGui)
-            if pirateButton then
-                pirateButton:Fire("MouseButton1Click")
-                pirateButton:Click()
-                print("[PK] Clicked Pirates button!")
-                task.wait(1)
+        end
+        
+        -- Method 2: Look for NPC by position (Pirate NPC is usually on left side)
+        for _, child in pairs(workspace:GetChildren()) do
+            if child:IsA("Model") and child:FindFirstChild("Humanoid") then
+                local rootPart = child:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local pos = rootPart.Position
+                    -- Pirate NPC is typically on left side (negative X)
+                    if pos.X < 0 then
+                        return child
+                    end
+                end
+            end
+        end
+        
+        return nil
+    end
+    
+    local pirateNPC = findPirateNPC()
+    
+    if pirateNPC then
+        print("[PK] Found Pirate NPC: " .. pirateNPC.Name)
+        
+        -- Get the NPC's position on screen
+        local rootPart = pirateNPC:FindFirstChild("HumanoidRootPart") or pirateNPC:FindFirstChild("Head")
+        if rootPart then
+            local screenPos = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+            if screenPos then
+                local x, y = screenPos.X, screenPos.Y
+                print("[PK] NPC screen position: " .. x .. ", " .. y)
+                
+                -- Click at that position
+                VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
+                task.wait(0.05)
+                VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
+                print("[PK] Clicked Pirate NPC!")
                 return true
             end
         end
-        task.wait(0.5)
+    else
+        print("[PK] Pirate NPC not found - trying alternative method")
+        
+        -- Alternative: Click at known screen position (left side where NPC stands)
+        local x, y = 300, 400  -- Adjust these coordinates
+        VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        print("[PK] Clicked at position: " .. x .. ", " .. y)
+        return true
     end
-    print("[PK] Joined Pirates (or already in team)")
-    return true
+    
+    return false
 end
 
--- ========== CREATE WHITE OVERLAY (AFTER JOINING PIRATES) ==========
-local function createWhiteOverlay()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PK_Overlay"
-    screenGui.ResetOnSpawn = false
-    
-    local whiteFrame = Instance.new("Frame")
-    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-    whiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    whiteFrame.BackgroundTransparency = 0
-    whiteFrame.BorderSizePixel = 0
-    whiteFrame.Parent = screenGui
-    
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    return screenGui
-end
-
--- ========== FIND AND CLICK JOIN BUTTON ==========
+-- ========== CLICK JOIN BUTTON (For crew invite) ==========
 local function clickJoinButton()
     local playerGui = player:FindFirstChild("PlayerGui")
     if not playerGui then return false end
@@ -130,6 +145,23 @@ local function hasInvite()
     return false
 end
 
+-- ========== CREATE WHITE OVERLAY ==========
+local function createWhiteOverlay()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "PK_Overlay"
+    screenGui.ResetOnSpawn = false
+    
+    local whiteFrame = Instance.new("Frame")
+    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+    whiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    whiteFrame.BackgroundTransparency = 0
+    whiteFrame.BorderSizePixel = 0
+    whiteFrame.Parent = screenGui
+    
+    screenGui.Parent = player:WaitForChild("PlayerGui")
+    return screenGui
+end
+
 -- ========== REGISTER WITH DASHBOARD ==========
 local function registerDevice()
     local data = {
@@ -169,28 +201,21 @@ local function checkSyncSignal()
     end
 end
 
--- ========== REMOVE OVERLAY ==========
-local function removeOverlay()
-    if overlay then
-        pcall(function() overlay:Destroy() end)
-        print("[PK] Overlay removed")
-    end
-end
-
--- ========== MAIN (CORRECT ORDER) ==========
-print("[PK] Pirate King Glitch - Starting...")
+-- ========== MAIN ==========
+print("[PK] Pirate King Glitch - NPC Click Method")
 
 -- Wait for game to load
 repeat task.wait(1) until player.Character and player.Character:FindFirstChild("Humanoid")
 task.wait(2)
 
--- STEP 1: Join Pirates FIRST (no overlay yet)
-joinPirates()
+-- Click the Pirate NPC to join team
+clickPirateNPC()
+task.wait(2)
 
--- STEP 2: Register with dashboard
+-- Register with dashboard
 registerDevice()
 
--- STEP 3: Wait for crew invite
+-- Wait for crew invite
 print("[PK] Waiting for crew invite...")
 repeat
     task.wait(1)
@@ -198,12 +223,12 @@ until hasInvite()
 
 print("[PK] Crew invite detected!")
 
--- STEP 4: NOW create white overlay (after invite is visible)
+-- Create white overlay
 overlay = createWhiteOverlay()
-print("[PK] White overlay active - only invite popup visible")
+print("[PK] White overlay active")
 
--- STEP 5: Wait for START signal
-print("[PK] Waiting for START signal from dashboard...")
+-- Wait for START signal
+print("[PK] Waiting for START signal...")
 
 while true do
     checkSyncSignal()
@@ -221,11 +246,9 @@ while true do
             
             print("[PK] JOIN clicked!")
             task.wait(1)
-            removeOverlay()
+            pcall(function() overlay:Destroy() end)
             print("[PK] Complete!")
             break
-        elseif timeLeft <= 1 then
-            print("[PK] Syncing in " .. string.format("%.1f", timeLeft) .. "s...")
         end
     end
     
