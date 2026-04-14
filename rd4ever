@@ -1,6 +1,6 @@
 -- ============================================
--- PIRATE KING GLITCH - CLICKS THE NPC
--- The red NPC below "PIRATES" text is the target
+-- PIRATE KING GLITCH - CLICK THE RED NPC
+-- Targets the actual 3D character model
 -- ============================================
 
 local player = game.Players.LocalPlayer
@@ -13,73 +13,70 @@ local syncActive = false
 local targetTime = nil
 local overlay = nil
 
--- ========== CLICK THE PIRATE NPC ==========
+-- ========== FIND AND CLICK THE RED PIRATE NPC ==========
 local function clickPirateNPC()
-    print("[PK] Looking for Pirate NPC...")
+    print("[PK] Looking for Red Pirate NPC...")
     
-    -- Find all NPCs in the game
-    local function findPirateNPC()
-        -- Check workspace for NPCs
-        local npc = nil
-        
-        -- Method 1: Look for NPC by name
+    -- Find the Pirate NPC in the 3D world
+    local function findRedPirateNPC()
+        -- Search through workspace for the Pirate NPC
         for _, child in pairs(workspace:GetChildren()) do
+            -- Look for NPC models
             if child:IsA("Model") then
                 local name = (child.Name or ""):lower()
-                if name:find("pirate") or name:find("npc") then
-                    -- Find humanoid or clickable part
-                    local humanoid = child:FindFirstChild("Humanoid")
-                    local head = child:FindFirstChild("Head")
-                    if humanoid and head then
+                
+                -- Check by name patterns
+                if name:find("pirate") or name:find("npc") or name:find("recruit") then
+                    -- Check if it has a humanoid (it's a character)
+                    if child:FindFirstChild("Humanoid") then
+                        print("[PK] Found NPC candidate: " .. child.Name)
                         return child
+                    end
+                end
+                
+                -- Also check for red-colored NPCs (optional)
+                local torso = child:FindFirstChild("UpperTorso") or child:FindFirstChild("Torso")
+                if torso then
+                    -- Check if the NPC has red clothing/parts
+                    for _, part in pairs(child:GetDescendants()) do
+                        if part:IsA("BasePart") and part.BrickColor == BrickColor.new("Bright red") then
+                            print("[PK] Found red NPC: " .. child.Name)
+                            return child
+                        end
                     end
                 end
             end
         end
-        
-        -- Method 2: Look for NPC by position (Pirate NPC is usually on left side)
-        for _, child in pairs(workspace:GetChildren()) do
-            if child:IsA("Model") and child:FindFirstChild("Humanoid") then
-                local rootPart = child:FindFirstChild("HumanoidRootPart")
-                if rootPart then
-                    local pos = rootPart.Position
-                    -- Pirate NPC is typically on left side (negative X)
-                    if pos.X < 0 then
-                        return child
-                    end
-                end
-            end
-        end
-        
         return nil
     end
     
-    local pirateNPC = findPirateNPC()
+    local pirateNPC = findRedPirateNPC()
     
     if pirateNPC then
-        print("[PK] Found Pirate NPC: " .. pirateNPC.Name)
+        -- Get the NPC's position in 3D world
+        local rootPart = pirateNPC:FindFirstChild("HumanoidRootPart") or 
+                         pirateNPC:FindFirstChild("Head") or
+                         pirateNPC:FindFirstChild("UpperTorso")
         
-        -- Get the NPC's position on screen
-        local rootPart = pirateNPC:FindFirstChild("HumanoidRootPart") or pirateNPC:FindFirstChild("Head")
         if rootPart then
+            -- Convert 3D position to 2D screen coordinates
             local screenPos = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-            if screenPos then
-                local x, y = screenPos.X, screenPos.Y
-                print("[PK] NPC screen position: " .. x .. ", " .. y)
-                
-                -- Click at that position
-                VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
-                task.wait(0.05)
-                VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
-                print("[PK] Clicked Pirate NPC!")
-                return true
-            end
+            local x, y = screenPos.X, screenPos.Y
+            
+            print("[PK] NPC screen position: " .. math.floor(x) .. ", " .. math.floor(y))
+            
+            -- Click at that position
+            VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.05)
+            VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
+            print("[PK] ✅ Clicked Pirate NPC!")
+            return true
         end
     else
-        print("[PK] Pirate NPC not found - trying alternative method")
-        
-        -- Alternative: Click at known screen position (left side where NPC stands)
-        local x, y = 300, 400  -- Adjust these coordinates
+        print("[PK] NPC not found - using fixed position click")
+        -- Fallback: Click at known position where red NPC stands (left side)
+        -- These coordinates may need adjustment for your screen
+        local x, y = 250, 380
         VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
         task.wait(0.05)
         VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
@@ -208,7 +205,7 @@ print("[PK] Pirate King Glitch - NPC Click Method")
 repeat task.wait(1) until player.Character and player.Character:FindFirstChild("Humanoid")
 task.wait(2)
 
--- Click the Pirate NPC to join team
+-- Click the Red Pirate NPC to join team
 clickPirateNPC()
 task.wait(2)
 
