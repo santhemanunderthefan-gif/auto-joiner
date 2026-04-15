@@ -1,253 +1,161 @@
--- ============================================
--- PIRATE KING GLITCH - CLICK THE RED NPC
--- Targets the actual 3D character model
--- ============================================
+-- CREW SYNC MASTER SCRIPT (FINAL)
+-- Website: https://rd4ever.onrender.com
+-- Joins Pirates IMMEDIATELY, then waits for START command to accept crew invites
 
-local player = game.Players.LocalPlayer
-local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInput = game:GetService("VirtualInputManager")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
 
-local DASHBOARD_URL = "https://rd4ever.onrender.com"
-local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId)
-local syncActive = false
-local targetTime = nil
-local overlay = nil
+-- ========== CONFIGURATION ==========
+local WEBSITE_URL = "https://rd4ever.onrender.com"
+local TOP_BAR_OFFSET = 58
+local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId):sub(1,4)
 
--- ========== FIND AND CLICK THE RED PIRATE NPC ==========
-local function clickPirateNPC()
-    print("[PK] Looking for Red Pirate NPC...")
+-- ========== PART 1: AUTO JOIN PIRATES (RUNS IMMEDIATELY) ==========
+local function joinPirates()
+    repeat task.wait() until game:IsLoaded()
     
-    -- Find the Pirate NPC in the 3D world
-    local function findRedPirateNPC()
-        -- Search through workspace for the Pirate NPC
-        for _, child in pairs(workspace:GetChildren()) do
-            -- Look for NPC models
-            if child:IsA("Model") then
-                local name = (child.Name or ""):lower()
-                
-                -- Check by name patterns
-                if name:find("pirate") or name:find("npc") or name:find("recruit") then
-                    -- Check if it has a humanoid (it's a character)
-                    if child:FindFirstChild("Humanoid") then
-                        print("[PK] Found NPC candidate: " .. child.Name)
-                        return child
-                    end
-                end
-                
-                -- Also check for red-colored NPCs (optional)
-                local torso = child:FindFirstChild("UpperTorso") or child:FindFirstChild("Torso")
-                if torso then
-                    -- Check if the NPC has red clothing/parts
-                    for _, part in pairs(child:GetDescendants()) do
-                        if part:IsA("BasePart") and part.BrickColor == BrickColor.new("Bright red") then
-                            print("[PK] Found red NPC: " .. child.Name)
-                            return child
-                        end
-                    end
-                end
-            end
-        end
-        return nil
-    end
+    local success, result = pcall(function()
+        local commF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+        return commF:InvokeServer("SetTeam", "Pirates")
+    end)
     
-    local pirateNPC = findRedPirateNPC()
-    
-    if pirateNPC then
-        -- Get the NPC's position in 3D world
-        local rootPart = pirateNPC:FindFirstChild("HumanoidRootPart") or 
-                         pirateNPC:FindFirstChild("Head") or
-                         pirateNPC:FindFirstChild("UpperTorso")
-        
-        if rootPart then
-            -- Convert 3D position to 2D screen coordinates
-            local screenPos = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-            local x, y = screenPos.X, screenPos.Y
-            
-            print("[PK] NPC screen position: " .. math.floor(x) .. ", " .. math.floor(y))
-            
-            -- Click at that position
-            VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            task.wait(0.05)
-            VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            print("[PK] ✅ Clicked Pirate NPC!")
-            return true
-        end
+    if success then
+        print("✅ [PIRATES] Successfully joined Pirates team!")
+        return true
     else
-        print("[PK] NPC not found - using fixed position click")
-        -- Fallback: Click at known position where red NPC stands (left side)
-        -- These coordinates may need adjustment for your screen
-        local x, y = 250, 380
-        VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
-        print("[PK] Clicked at position: " .. x .. ", " .. y)
-        return true
+        warn("❌ [PIRATES] Failed: " .. tostring(result))
+        return false
     end
-    
-    return false
 end
 
--- ========== CLICK JOIN BUTTON (For crew invite) ==========
-local function clickJoinButton()
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    
-    local function findJoinButton(obj)
-        for _, child in pairs(obj:GetChildren()) do
-            if child:IsA("ImageButton") then
-                local textLabel = child:FindFirstChild("TextLabel")
-                if textLabel and textLabel.Text then
-                    local text = textLabel.Text:lower()
-                    if text:find("join") then
-                        return child
-                    end
-                end
-            end
-            if child:IsA("TextButton") then
-                local text = (child.Text or ""):lower()
-                if text:find("join") then
-                    return child
-                end
-            end
-            local found = findJoinButton(child)
-            if found then return found end
-        end
-        return nil
-    end
-    
-    local joinButton = findJoinButton(playerGui)
-    
-    if joinButton then
-        joinButton:Fire("MouseButton1Click")
-        joinButton:Click()
-        print("[PK] Clicked JOIN!")
-        return true
-    end
-    return false
-end
+-- JOIN PIRATES RIGHT NOW
+print("🏴‍☠️ Joining Pirates team immediately...")
+local joinedPirates = joinPirates()
 
--- ========== CHECK IF INVITE EXISTS ==========
-local function hasInvite()
-    local playerGui = player:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    
-    for _, child in pairs(playerGui:GetDescendants()) do
-        if child:IsA("TextLabel") then
-            local text = (child.Text or ""):lower()
-            if text:find("crew invite") or text:find("invite") then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- ========== CREATE WHITE OVERLAY ==========
-local function createWhiteOverlay()
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PK_Overlay"
-    screenGui.ResetOnSpawn = false
-    
-    local whiteFrame = Instance.new("Frame")
-    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-    whiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    whiteFrame.BackgroundTransparency = 0
-    whiteFrame.BorderSizePixel = 0
-    whiteFrame.Parent = screenGui
-    
-    screenGui.Parent = player:WaitForChild("PlayerGui")
-    return screenGui
-end
-
--- ========== REGISTER WITH DASHBOARD ==========
-local function registerDevice()
-    local data = {
-        device = DEVICE_NAME,
-        server_code = game.JobId,
-        has_invite = false,
-        timestamp = os.time()
+-- ========== PART 2: AUTO ACCEPT CREW INVITE (WAITS FOR START) ==========
+local function findAndAcceptCrewInvite()
+    local btnPaths = {
+        "Main.Crew.Create.Invite.Accept",
+        "Main.Crew.Invite.Accept",
+        "Crew.Invite.Accept",
+        "Main.Dialog.Confirm"
     }
     
-    pcall(function()
-        HttpService:PostAsync(
-            DASHBOARD_URL .. "/api/register_device",
-            HttpService:JSONEncode(data),
-            Enum.HttpContentType.ApplicationJson
-        )
-    end)
-    print("[PK] Registered: " .. DEVICE_NAME)
-end
-
--- ========== CHECK SYNC SIGNAL ==========
-local function checkSyncSignal()
-    local success, response = pcall(function()
-        return HttpService:GetAsync(DASHBOARD_URL .. "/api/sync_status", true)
-    end)
-    
-    if success and response then
-        local data = HttpService:JSONDecode(response)
-        if data.sync_active and data.target_time then
-            if data.target_time > tick() then
-                if not syncActive then
-                    print("[PK] START signal received!")
-                    targetTime = data.target_time
-                    syncActive = true
-                end
+    for _, path in ipairs(btnPaths) do
+        local success, btn = pcall(function()
+            local current = player.PlayerGui
+            for part in path:gmatch("[^%.]+") do
+                current = current[part]
+                if not current then break end
             end
-        end
-    end
-end
-
--- ========== MAIN ==========
-print("[PK] Pirate King Glitch - NPC Click Method")
-
--- Wait for game to load
-repeat task.wait(1) until player.Character and player.Character:FindFirstChild("Humanoid")
-task.wait(2)
-
--- Click the Red Pirate NPC to join team
-clickPirateNPC()
-task.wait(2)
-
--- Register with dashboard
-registerDevice()
-
--- Wait for crew invite
-print("[PK] Waiting for crew invite...")
-repeat
-    task.wait(1)
-until hasInvite()
-
-print("[PK] Crew invite detected!")
-
--- Create white overlay
-overlay = createWhiteOverlay()
-print("[PK] White overlay active")
-
--- Wait for START signal
-print("[PK] Waiting for START signal...")
-
-while true do
-    checkSyncSignal()
-    
-    if syncActive and targetTime then
-        local timeLeft = targetTime - tick()
+            return current
+        end)
         
-        if timeLeft <= 0 then
-            print("[PK] EXECUTING SYNC CLICK!")
+        if success and btn and btn:IsA("TextButton") and btn.Visible and btn.AbsolutePosition then
+            local x = btn.AbsolutePosition.X + (btn.AbsoluteSize.X / 2)
+            local y = btn.AbsolutePosition.Y + (btn.AbsoluteSize.Y / 2) + TOP_BAR_OFFSET
             
-            for i = 1, 3 do
-                clickJoinButton()
-                task.wait(0.05)
-            end
+            VirtualInput:SendMouseMoveEvent(x, y, 0, game)
+            task.wait(0.05)
+            VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.1)
+            VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
             
-            print("[PK] JOIN clicked!")
-            task.wait(1)
-            pcall(function() overlay:Destroy() end)
-            print("[PK] Complete!")
-            break
+            print("✅ [CREW] Accepted crew invite!")
+            return true
         end
     end
     
-    task.wait(0.1)
+    return false
 end
+
+-- ========== PART 3: WEBSITE COMMUNICATION ==========
+local function sendStatusToWebsite(status, extra)
+    local success, err = pcall(function()
+        local data = HttpService:JSONEncode({
+            device = DEVICE_NAME,
+            status = status,
+            team = player.Team and player.Team.Name or "Pirates",
+            joined_pirates = joinedPirates,
+            accepted_invite = extra or false,
+            player_name = player.Name,
+            user_id = player.UserId,
+            timestamp = os.time()
+        })
+        HttpService:PostAsync(WEBSITE_URL .. "/api/status", data, Enum.HttpContentType.ApplicationJson)
+    end)
+    if not success then
+        warn("Failed to send status: " .. tostring(err))
+    end
+end
+
+-- Register device with website
+local function registerWithWebsite()
+    local success, err = pcall(function()
+        local data = HttpService:JSONEncode({
+            device = DEVICE_NAME,
+            player_name = player.Name,
+            user_id = player.UserId
+        })
+        HttpService:PostAsync(WEBSITE_URL .. "/api/register", data, Enum.HttpContentType.ApplicationJson)
+    end)
+    if success then
+        print("✅ Registered with website: " .. DEVICE_NAME)
+    else
+        warn("⚠️ Failed to register: " .. tostring(err))
+    end
+end
+
+-- Poll website for START command (for crew invites only)
+local function waitForStartCommand()
+    while true do
+        task.wait(1)  -- Check every second
+        
+        local success, response = pcall(function()
+            return HttpService:GetAsync(WEBSITE_URL .. "/api/command/" .. player.UserId, true)
+        end)
+        
+        if success and response then
+            local data = HttpService:JSONDecode(response)
+            
+            if data.command == "START_SYNC" then
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                print("🎯 START COMMAND RECEIVED FROM WEBSITE!")
+                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                
+                -- ONLY accept crew invite (already joined pirates)
+                local crewSuccess = findAndAcceptCrewInvite()
+                
+                -- Send result back to website
+                sendStatusToWebsite("completed", crewSuccess)
+                
+                print("📊 Crew Invite: " .. (crewSuccess and "✓ ACCEPTED" or "✗ NOT FOUND"))
+                
+                -- Wait a bit before accepting new commands
+                task.wait(5)
+            end
+        end
+    end
+end
+
+-- ========== INITIALIZATION ==========
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("🏴‍☠️  CREW SYNC MASTER SCRIPT LOADED")
+print("👤 Account: " .. player.Name)
+print("🌐 Website: " .. WEBSITE_URL)
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+-- Register with website and send initial status
+task.wait(1)
+registerWithWebsite()
+task.wait(0.5)
+sendStatusToWebsite("online", false)
+
+-- Start waiting for START command (for crew invites)
+spawn(waitForStartCommand)
+
+print("✅ Pirates team joined!")
+print("📡 Waiting for START command from website to accept crew invites...")
