@@ -1,161 +1,210 @@
--- CREW SYNC MASTER SCRIPT (FINAL)
--- Website: https://rd4ever.onrender.com
--- Joins Pirates IMMEDIATELY, then waits for START command to accept crew invites
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🏴‍☠️ CREW SYNC - WebSocket Only Version
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualInput = game:GetService("VirtualInputManager")
-local HttpService = game:GetService("HttpService")
+local WebSocket = game:GetService("WebSocket")
+
 local player = Players.LocalPlayer
+local WS_URL = "wss://rd4ever.onrender.com/socket.io/?EIO=4&transport=websocket"
 
--- ========== CONFIGURATION ==========
-local WEBSITE_URL = "https://rd4ever.onrender.com"
-local TOP_BAR_OFFSET = 58
-local DEVICE_NAME = player.Name .. "_" .. tostring(player.UserId):sub(1,4)
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("🏴‍☠️ CREW SYNC - WebSocket Only")
+print("👤 Account:", player.Name)
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
--- ========== PART 1: AUTO JOIN PIRATES (RUNS IMMEDIATELY) ==========
-local function joinPirates()
-    repeat task.wait() until game:IsLoaded()
-    
-    local success, result = pcall(function()
-        local commF = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
-        return commF:InvokeServer("SetTeam", "Pirates")
+local socket = nil
+local syncReceived = false
+local syncDelay = 5
+
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🔌 CONNECT WEBSOCKET
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function connectWebSocket()
+    local success, ws = pcall(function()
+        return WebSocket.connect(WS_URL)
     end)
     
-    if success then
-        print("✅ [PIRATES] Successfully joined Pirates team!")
+    if success and ws then
+        socket = ws
+        print("✅ WebSocket connected!")
+        
+        -- Send registration to server
+        task.wait(1)
+        local registerMsg = '42["register_client",{"username":"' .. player.Name .. '"}]'
+        pcall(function() socket:Send(registerMsg) end)
+        print("📡 Registered:", player.Name)
+        
+        -- Listen for sync command
+        socket.OnMessage:Connect(function(message)
+            print("📩 Received:", message)
+            
+            if message and message:find('"execute_sync"') then
+                local delayMatch = message:match('"delay":(%d+)')
+                if delayMatch then
+                    syncDelay = tonumber(delayMatch)
+                end
+                syncReceived = true
+                print("🔥 SYNC COMMAND! Delay:", syncDelay)
+            end
+        end)
+        
         return true
-    else
-        warn("❌ [PIRATES] Failed: " .. tostring(result))
-        return false
     end
+    
+    print("❌ WebSocket failed:", ws)
+    return false
 end
 
--- JOIN PIRATES RIGHT NOW
-print("🏴‍☠️ Joining Pirates team immediately...")
-local joinedPirates = joinPirates()
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🏴‍☠️ JOIN PIRATES
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function joinPirates()
+    print("🏴‍☠️ Joining Pirates...")
+    
+    repeat task.wait() until game:IsLoaded()
+    task.wait(2)
+    
+    pcall(function()
+        local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        if Remotes then
+            local CommF = Remotes:FindFirstChild("CommF_")
+            if CommF then
+                CommF:InvokeServer("SetTeam", "Pirates")
+                print("✅ Joined Pirates!")
+            end
+        end
+    end)
+end
 
--- ========== PART 2: AUTO ACCEPT CREW INVITE (WAITS FOR START) ==========
-local function findAndAcceptCrewInvite()
-    local btnPaths = {
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🔍 FIND INVITE BUTTON
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function findInviteButton()
+    if not player or not player.PlayerGui then return nil end
+    
+    local paths = {
         "Main.Crew.Create.Invite.Accept",
         "Main.Crew.Invite.Accept",
         "Crew.Invite.Accept",
         "Main.Dialog.Confirm"
     }
     
-    for _, path in ipairs(btnPaths) do
+    for _, path in ipairs(paths) do
         local success, btn = pcall(function()
             local current = player.PlayerGui
-            for part in path:gmatch("[^%.]+") do
-                current = current[part]
+            for part in string.gmatch(path, "[^%.]+") do
+                current = current:FindFirstChild(part)
                 if not current then break end
             end
             return current
         end)
         
-        if success and btn and btn:IsA("TextButton") and btn.Visible and btn.AbsolutePosition then
-            local x = btn.AbsolutePosition.X + (btn.AbsoluteSize.X / 2)
-            local y = btn.AbsolutePosition.Y + (btn.AbsoluteSize.Y / 2) + TOP_BAR_OFFSET
-            
-            VirtualInput:SendMouseMoveEvent(x, y, 0, game)
-            task.wait(0.05)
-            VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            task.wait(0.1)
-            VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
-            
-            print("✅ [CREW] Accepted crew invite!")
-            return true
+        if success and btn and btn:IsA("TextButton") and btn.Visible then
+            return btn
         end
     end
     
-    return false
+    return nil
 end
 
--- ========== PART 3: WEBSITE COMMUNICATION ==========
-local function sendStatusToWebsite(status, extra)
-    local success, err = pcall(function()
-        local data = HttpService:JSONEncode({
-            device = DEVICE_NAME,
-            status = status,
-            team = player.Team and player.Team.Name or "Pirates",
-            joined_pirates = joinedPirates,
-            accepted_invite = extra or false,
-            player_name = player.Name,
-            user_id = player.UserId,
-            timestamp = os.time()
-        })
-        HttpService:PostAsync(WEBSITE_URL .. "/api/status", data, Enum.HttpContentType.ApplicationJson)
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🖱️ CLICK BUTTON
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function clickButton(btn)
+    if not btn then return false end
+    
+    return pcall(function()
+        local x = btn.AbsolutePosition.X + btn.AbsoluteSize.X / 2
+        local y = btn.AbsolutePosition.Y + btn.AbsoluteSize.Y / 2 + 58
+        
+        VirtualInput:SendMouseMoveEvent(x, y, 0, game)
+        task.wait(0.05)
+        VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.1)
+        VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        
+        print("✅ Clicked invite!")
     end)
-    if not success then
-        warn("Failed to send status: " .. tostring(err))
+end
+
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- ⏳ WAIT FOR SYNC
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function waitForSync()
+    print("⏳ Waiting for sync command...")
+    
+    while not syncReceived do
+        task.wait(0.1)
+    end
+    
+    print("🔥 SYNC STARTING in", syncDelay, "seconds!")
+    
+    for i = syncDelay, 1, -1 do
+        print("⏱️ Joining in", i, "...")
+        task.wait(1)
     end
 end
 
--- Register device with website
-local function registerWithWebsite()
-    local success, err = pcall(function()
-        local data = HttpService:JSONEncode({
-            device = DEVICE_NAME,
-            player_name = player.Name,
-            user_id = player.UserId
-        })
-        HttpService:PostAsync(WEBSITE_URL .. "/api/register", data, Enum.HttpContentType.ApplicationJson)
-    end)
-    if success then
-        print("✅ Registered with website: " .. DEVICE_NAME)
-    else
-        warn("⚠️ Failed to register: " .. tostring(err))
-    end
-end
-
--- Poll website for START command (for crew invites only)
-local function waitForStartCommand()
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🔍 MONITOR FOR INVITES
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function monitorInvites()
     while true do
-        task.wait(1)  -- Check every second
+        local btn = findInviteButton()
         
-        local success, response = pcall(function()
-            return HttpService:GetAsync(WEBSITE_URL .. "/api/command/" .. player.UserId, true)
-        end)
-        
-        if success and response then
-            local data = HttpService:JSONDecode(response)
+        if btn then
+            print("📩 INVITE DETECTED!")
             
-            if data.command == "START_SYNC" then
-                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-                print("🎯 START COMMAND RECEIVED FROM WEBSITE!")
-                print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-                
-                -- ONLY accept crew invite (already joined pirates)
-                local crewSuccess = findAndAcceptCrewInvite()
-                
-                -- Send result back to website
-                sendStatusToWebsite("completed", crewSuccess)
-                
-                print("📊 Crew Invite: " .. (crewSuccess and "✓ ACCEPTED" or "✗ NOT FOUND"))
-                
-                -- Wait a bit before accepting new commands
-                task.wait(5)
+            -- Wait for sync command
+            waitForSync()
+            
+            -- Click the button
+            if clickButton(btn) then
+                print("✅ Successfully joined crew!")
+            else
+                print("❌ Failed to click invite")
             end
+            
+            break
         end
+        
+        task.wait(2)
     end
 end
 
--- ========== INITIALIZATION ==========
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🏴‍☠️  CREW SYNC MASTER SCRIPT LOADED")
-print("👤 Account: " .. player.Name)
-print("🌐 Website: " .. WEBSITE_URL)
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- 🚀 MAIN
+--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+local function main()
+    repeat task.wait()
+        player = Players.LocalPlayer
+    until player and player.Name ~= ""
+    
+    print("🚀 Starting Crew Sync for", player.Name)
+    
+    -- Connect WebSocket
+    if not connectWebSocket() then
+        print("❌ Cannot connect to server. Check if Render is running.")
+        return
+    end
+    
+    -- Join Pirates
+    joinPirates()
+    
+    -- Monitor for invites
+    monitorInvites()
+end
 
--- Register with website and send initial status
-task.wait(1)
-registerWithWebsite()
-task.wait(0.5)
-sendStatusToWebsite("online", false)
+-- Start
+local success, err = pcall(main)
+if not success then
+    print("❌ Error:", err)
+end
 
--- Start waiting for START command (for crew invites)
-spawn(waitForStartCommand)
-
-print("✅ Pirates team joined!")
-print("📡 Waiting for START command from website to accept crew invites...")
+-- Keep alive
+while true do
+    task.wait(60)
+end
