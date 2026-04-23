@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features)
+-- CREW SYNC FOR XENO
 -- Web Panel: https://pk-glitch.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -9,8 +9,6 @@ if Xeno and Xeno.HttpRequest then
     requestFunc = Xeno.HttpRequest
 elseif Xeno and Xeno.request then
     requestFunc = Xeno.request
-elseif Delta and Delta.request then
-    requestFunc = Delta.request
 elseif syn and syn.request then
     requestFunc = syn.request
 elseif request then
@@ -23,193 +21,20 @@ local username = localPlayer.Name
 local userId = localPlayer.UserId
 local httpService = game:GetService("HttpService")
 local vim = game:GetService("VirtualInputManager")
-local runService = game:GetService("RunService")
-local lighting = game:GetService("Lighting")
-local workspace = game:GetService("Workspace")
-local starterGui = game:GetService("StarterGui")
 
 local SERVER_URL = "https://pk-glitch.onrender.com"
 local hasInvite = false
-local hasAccepted = false
+local hasAccepted = false  -- Only becomes true AFTER sync click
 local isRunning = true
-local crewButtonClicked = false
 
--- ============ WORKING FPS CAP AT 15 ============
-local function lockFPS()
-    print("🔒 Setting FPS cap to 15...")
-    
-    pcall(function()
-        local UserSettings = game:GetService("UserSettings")
-        local GameSettings = UserSettings:GetService("UserGameSettings")
-        GameSettings.FrameRateLimit = 15
-    end)
-    
-    pcall(function()
-        settings().Rendering.QualityLevel = 1
-    end)
-    
-    local frameTime = 1 / 15
-    local lastTime = tick()
-    
-    runService.RenderStepped:Connect(function()
-        local currentTime = tick()
-        local delta = currentTime - lastTime
-        if delta < frameTime then
-            task.wait(frameTime - delta)
-        end
-        lastTime = tick()
-    end)
-    
-    print("✅ FPS cap set to 15")
-end
+-- Join Pirates
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
 
--- ============ WHITE SCREEN (Full White) ============
-local function enableWhiteScreen()
-    print("🌕 Enabling white screen mode...")
-    
-    -- Create white overlay GUI
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "WhiteScreenOverlay"
-    screenGui.IgnoreGuiInset = true
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local whiteFrame = Instance.new("Frame")
-    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-    whiteFrame.Position = UDim2.new(0, 0, 0, 0)
-    whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
-    whiteFrame.BackgroundTransparency = 0
-    whiteFrame.BorderSizePixel = 0
-    whiteFrame.ZIndex = 999
-    whiteFrame.Parent = screenGui
-    
-    pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-    end)
-    
-    -- Make game world white
-    pcall(function()
-        lighting.Ambient = Color3.new(1, 1, 1)
-        lighting.Brightness = 2
-        lighting.ClockTime = 12
-        lighting.FogColor = Color3.new(1, 1, 1)
-        lighting.FogEnd = 0.1
-        lighting.FogStart = 0
-        lighting.GlobalShadows = false
-        lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-    end)
-    
-    -- Hide parts
-    pcall(function()
-        for _, child in ipairs(workspace:GetChildren()) do
-            if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
-                child.Transparency = 1
-            elseif child:IsA("Model") and child ~= localPlayer.Character then
-                for _, part in ipairs(child:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Transparency = 1
-                    end
-                end
-            end
-        end
-    end)
-    
-    print("✅ White screen mode enabled")
-end
-
--- ============ CLICK CREW BUTTON ONCE ============
-local function clickCrewButton()
-    if crewButtonClicked then return end
-    
-    print("🎯 Looking for CrewButton...")
-    
-    -- Wait for PlayerGui to load
-    repeat task.wait(0.5) until localPlayer.PlayerGui
-    
-    -- Try to find the CrewButton in different possible locations
-    local crewButton = nil
-    
-    -- Method 1: StarterGui path
-    pcall(function()
-        if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
-            crewButton = starterGui.Main.HUDButtonBar.CrewButton
-        end
-    end)
-    
-    -- Method 2: PlayerGui path
-    if not crewButton then
-        pcall(function()
-            if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
-                crewButton = localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton
-            end
-        end)
-    end
-    
-    -- Method 3: Search for CrewButton anywhere in PlayerGui
-    if not crewButton then
-        pcall(function()
-            crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
-        end)
-    end
-    
-    if crewButton and crewButton.Visible then
-        print("✅ Found CrewButton! Clicking...")
-        
-        -- Try to activate
-        local success = pcall(function()
-            crewButton:Activate()
-        end)
-        
-        if not success then
-            -- Hardware click
-            local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
-            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2) + 58
-            vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-            task.wait(0.1)
-            vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
-        end
-        
-        crewButtonClicked = true
-        print("✅ Crew button clicked! Crew menu should be open.")
-    else
-        print("⚠️ CrewButton not found - will retry")
-        -- Retry after 3 seconds
-        task.wait(3)
-        if not crewButtonClicked then
-            clickCrewButton()
-        end
-    end
-end
-
--- ============ CORRECT INVITE DETECTION ============
-local function hasRealInvite()
-    local playerGui = localPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
-    
-    local main = playerGui:FindFirstChild("Main")
-    if not main then return false end
-    
-    local crew = main:FindFirstChild("Crew")
-    if not crew then return false end
-    
-    local create = crew:FindFirstChild("Create")
-    if not create then return false end
-    
-    local invite = create:FindFirstChild("Invite")
-    if not invite then return false end
-    
-    if invite.Visible == true then
-        local acceptBtn = invite:FindFirstChild("Accept")
-        if acceptBtn and acceptBtn.Visible == true then
-            return true
-        end
-    end
-    
-    return false
-end
-
--- ============ HTTP FUNCTIONS ============
-
+-- Send username to server
 local function sendUsername()
     if not requestFunc then return end
     
@@ -228,9 +53,9 @@ local function sendUsername()
             Body = httpService:JSONEncode(data)
         })
     end)
-    print("📡 Username sent: " .. username)
 end
 
+-- Send heartbeat
 local function sendHeartbeat()
     if not requestFunc then return end
     
@@ -250,6 +75,7 @@ local function sendHeartbeat()
     end)
 end
 
+-- Send leave signal
 local function sendLeave()
     if not requestFunc then return end
     
@@ -269,6 +95,7 @@ local function sendLeave()
     end)
 end
 
+-- Update invite status
 local function updateInviteStatus(status)
     if not requestFunc then return end
     
@@ -288,6 +115,7 @@ local function updateInviteStatus(status)
     end)
 end
 
+-- Update accepted status (ONLY called when sync click happens)
 local function updateAcceptedStatus()
     if not requestFunc then return end
     
@@ -307,17 +135,7 @@ local function updateAcceptedStatus()
     end)
 end
 
--- ============ CREW FUNCTIONS ============
-
--- Join Pirates
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
-pcall(function()
-    commF:InvokeServer("SetTeam", "Pirates")
-    print("✅ Joined Pirates team")
-end)
-
--- Get Accept button
+-- Get the Accept button
 local function getAcceptButton()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
@@ -337,47 +155,61 @@ local function getAcceptButton()
     return invite:FindFirstChild("Accept")
 end
 
--- Check for REAL invite
+-- Check for invite button
 local function checkForInvite()
+    -- Don't check if already accepted
     if hasAccepted then return false end
     
-    local realInvite = hasRealInvite()
+    local acceptBtn = getAcceptButton()
     
-    if realInvite then
+    local hasRealInvite = false
+    if acceptBtn then
+        local invite = acceptBtn.Parent
+        if invite and invite.Visible == true then
+            hasRealInvite = acceptBtn.Visible == true and acceptBtn.Active == true
+        end
+    end
+    
+    if hasRealInvite then
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print("🔔 REAL INVITE DETECTED! Ready for sync")
+            print("🔔 READY - Invite received!")
         end
         return true
     else
         if hasInvite then
             hasInvite = false
             updateInviteStatus(false)
-            print("⏳ No invite - Waiting...")
+            print("⏳ Waiting for invite...")
         end
         return false
     end
 end
 
--- Click accept button
+-- Click the accept button (ONLY called from sync)
 local function clickAcceptButton()
-    if hasAccepted then return true end
-    
     local acceptBtn = getAcceptButton()
     
-    if not acceptBtn or not acceptBtn.Visible then
-        print("❌ Accept button not visible")
+    if not acceptBtn then
+        print("❌ Accept button not found!")
+        return false
+    end
+    
+    if not acceptBtn.Visible then
+        print("❌ Accept button is not visible!")
         return false
     end
     
     print("🎯 Clicking Accept button...")
     
-    local success = pcall(function()
+    -- Try direct activation
+    local success, err = pcall(function()
         acceptBtn:Activate()
     end)
     
     if not success then
+        -- Fallback to hardware click
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
         
@@ -386,17 +218,15 @@ local function clickAcceptButton()
         vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
-    hasAccepted = true
-    hasInvite = false
-    updateAcceptedStatus()
-    print("✅ ACCEPTED! Joined crew!")
+    print("✅ Click executed!")
     return true
 end
 
--- Poll for sync commands
+-- Poll for sync commands from website
 local function pollSync()
     task.spawn(function()
         while isRunning do
+            -- Only check for sync if we have an invite and haven't accepted yet
             if hasInvite and not hasAccepted and requestFunc then
                 local success, response = pcall(function()
                     return requestFunc({
@@ -409,16 +239,26 @@ local function pollSync()
                     local data = httpService:JSONDecode(response.Body)
                     if data.sync then
                         print("========================================")
-                        print("🎬 GLOBAL SYNC TRIGGERED!")
+                        print("🎬 GLOBAL SYNC TRIGGERED FROM WEBSITE!")
                         print("⏰ Countdown: " .. data.delay .. " seconds")
                         print("========================================")
                         
+                        -- Countdown
                         for i = data.delay, 1, -1 do
-                            print("⏰ " .. i)
+                            print("⏰ " .. i .. "...")
                             task.wait(1)
                         end
                         
-                        clickAcceptButton()
+                        -- Click the button
+                        local clicked = clickAcceptButton()
+                        
+                        if clicked then
+                            -- Mark as accepted ONLY AFTER clicking from sync
+                            hasAccepted = true
+                            hasInvite = false
+                            updateAcceptedStatus()
+                            print("✅ ACCEPTED! Status updated on website")
+                        end
                     end
                 end
             end
@@ -427,7 +267,7 @@ local function pollSync()
     end)
 end
 
--- Keep alive
+-- Keep username alive
 local function keepAlive()
     task.spawn(function()
         while isRunning do
@@ -439,23 +279,33 @@ local function keepAlive()
     task.spawn(function()
         while isRunning do
             sendUsername()
-            task.wait(30)
+            task.wait(15)
         end
     end)
 end
 
--- Monitor invites
+-- Monitor for invite button
 local function monitorInvite()
     task.spawn(function()
         while isRunning do
             checkForInvite()
-            task.wait(1)
+            task.wait(0.5)
         end
     end)
 end
 
 -- Leave detection
 local function setupLeaveDetection()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        playerGui.AncestryChanged:Connect(function()
+            if not playerGui.Parent then
+                sendLeave()
+                isRunning = false
+            end
+        end)
+    end
+    
     localPlayer.AncestryChanged:Connect(function()
         if not localPlayer.Parent then
             sendLeave()
@@ -464,55 +314,37 @@ local function setupLeaveDetection()
     end)
 end
 
--- ============ MAIN ============
+-- ============ MAIN EXECUTION ============
 
 print("========================================")
-print("🚀 CREW SYNC FOR XENO (COMPLETE)")
+print("🚀 CREW SYNC FOR XENO")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
--- Apply FPS cap
-lockFPS()
-
--- Enable white screen
-enableWhiteScreen()
-
--- Join Pirates
-pcall(function()
-    commF:InvokeServer("SetTeam", "Pirates")
-end)
-
--- Send initial username
 sendUsername()
-
--- Click CrewButton once after short delay
-task.wait(2)
-clickCrewButton()
-
--- Start all processes
 keepAlive()
 monitorInvite()
 pollSync()
 setupLeaveDetection()
 
-print("✅ Auto-join Pirates: ON")
-print("✅ FPS Cap: 15 FPS")
-print("✅ White Screen: ON")
-print("✅ Crew Button: Auto-clicked once")
-print("✅ Invite Detection: ACTIVE")
-print("✅ Sync System: ACTIVE")
+print("✅ Auto-join Pirates: ACTIVE")
+print("📡 Status: Waiting for invite...")
+print("========================================")
+print("💡 When you get an invite, status will show 'READY' on website")
+print("💡 Press 'START GLOBAL SYNC' on website to accept")
 print("========================================")
 
--- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
     if hasAccepted then
-        status = "ACCEPTED"
+        status = "ACCEPTED ✓"
     elseif hasInvite then
         status = "READY"
     end
     print("💓 Online - " .. status)
 end
+
+print("👋 Script ended")
