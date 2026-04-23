@@ -27,6 +27,7 @@ local hasInvite = false
 local acceptedInvite = false
 local isRunning = true
 local crewJoined = false
+local clickExecuted = false
 
 -- Join Pirates
 local replicatedStorage = game:GetService("ReplicatedStorage")
@@ -116,7 +117,7 @@ local function updateInviteStatus(status)
     end)
 end
 
--- Update accepted status (only called when actually joined crew)
+-- Update accepted status (only when actually joined crew via sync)
 local function updateAcceptedStatus()
     if not requestFunc then return end
     
@@ -156,9 +157,13 @@ local function getAcceptButton()
     return invite:FindFirstChild("Accept")
 end
 
--- Check if player actually joined the crew
+-- Check if player actually joined a crew (only after accepting invite)
 local function checkIfJoinedCrew()
-    -- Check crew UI to see if we're in a crew now
+    -- Only check if we actually executed a click
+    if not clickExecuted then
+        return false
+    end
+    
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
     
@@ -168,24 +173,23 @@ local function checkIfJoinedCrew()
     local crew = main:FindFirstChild("Crew")
     if not crew then return false end
     
-    -- If we're in a crew, the Create frame might be gone or different
+    -- Check if invite frame is gone (meaning we accepted)
     local create = crew:FindFirstChild("Create")
-    if not create then 
-        -- Create frame missing means we might be in a crew already
-        return true
+    if create then
+        local invite = create:FindFirstChild("Invite")
+        if invite and invite.Visible then
+            return false -- Still has invite visible, not joined yet
+        end
     end
     
-    -- Check if invite frame is gone (means we accepted)
-    local invite = create:FindFirstChild("Invite")
-    if invite and invite.Visible == false then
-        return true
-    end
-    
-    return false
+    return true
 end
 
 -- Check for invite button
 local function checkForInvite()
+    -- Don't check if we already joined
+    if crewJoined then return false end
+    
     local acceptBtn = getAcceptButton()
     
     local hasRealInvite = false
@@ -213,11 +217,16 @@ local function checkForInvite()
     end
 end
 
--- Execute click using MULTIPLE METHODS to ensure it works
+-- Execute click to accept invite
 local function executeClick()
     if crewJoined then 
         print("✅ Already joined crew")
         return true
+    end
+    
+    if clickExecuted then
+        print("⚠️ Click already executed, waiting for join verification...")
+        return false
     end
     
     local acceptBtn = getAcceptButton()
@@ -232,59 +241,50 @@ local function executeClick()
         return false
     end
     
-    -- Method 1: Fire the button directly (if possible)
+    print("🎯 Clicking Accept button...")
+    clickExecuted = true
+    
+    -- Try direct activation first
     local success, err = pcall(function()
         acceptBtn:Activate()
     end)
     
-    if success then
-        print("✅ Method 1: Button activated directly")
-        task.wait(0.5)
-    else
-        print("⚠️ Method 1 failed, trying hardware click...")
-        
-        -- Method 2: Hardware mouse click
+    if not success then
+        -- Fallback to hardware click
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
-        
-        print("🎯 Clicking at position: " .. x .. ", " .. y)
         
         vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
         task.wait(0.1)
         vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
-    -- Wait a moment for the join to process
-    print("⏳ Waiting for crew join to process...")
-    task.wait(2)
+    print("⏳ Waiting to verify crew join...")
     
-    -- Verify we actually joined the crew
-    for i = 1, 5 do
+    -- Wait and verify join
+    for i = 1, 10 do
         task.wait(1)
         if checkIfJoinedCrew() then
             crewJoined = true
             acceptedInvite = true
             updateAcceptedStatus()
-            print("✅ Successfully joined the crew!")
+            print("✅ Successfully joined crew!")
             return true
         end
-        print("⏳ Verifying crew join... (" .. i .. "/5)")
+        print("⏳ Verifying... (" .. i .. "/10)")
     end
     
-    if crewJoined then
-        return true
-    else
-        print("⚠️ Click executed but crew join not verified yet")
-        -- Don't mark as accepted until verified
-        return false
-    end
+    -- If we get here, click might have failed
+    print("⚠️ Could not verify crew join")
+    clickExecuted = false
+    return false
 end
 
 -- Poll for sync commands
 local function pollSync()
     task.spawn(function()
         while isRunning do
-            if hasInvite and not crewJoined and requestFunc then
+            if hasInvite and not crewJoined and not clickExecuted and requestFunc then
                 local success, response = pcall(function()
                     return requestFunc({
                         Url = SERVER_URL .. "/api/sync-command/" .. username,
@@ -300,20 +300,12 @@ local function pollSync()
                         print("⏰ Countdown: " .. data.delay .. " seconds")
                         print("========================================")
                         
-                        -- Countdown
                         for i = data.delay, 1, -1 do
                             print("⏰ " .. i .. "...")
                             task.wait(1)
                         end
                         
-                        print("🎯 EXECUTING CLICK NOW!")
-                        local clicked = executeClick()
-                        
-                        if clicked then
-                            print("✅ Sync complete! Joined crew!")
-                        else
-                            print("⚠️ Sync executed but waiting for crew verification")
-                        end
+                        executeClick()
                     end
                 end
             end
@@ -349,21 +341,6 @@ local function monitorInvite()
     end)
 end
 
--- Monitor if crew was joined (for manual accepts)
-local function monitorCrewJoin()
-    task.spawn(function()
-        while isRunning do
-            if not crewJoined and checkIfJoinedCrew() then
-                crewJoined = true
-                acceptedInvite = true
-                updateAcceptedStatus()
-                print("✅ Detected crew join!")
-            end
-            task.wait(1)
-        end
-    end)
-end
-
 -- Leave detection
 local function setupLeaveDetection()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
@@ -393,21 +370,16 @@ print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
--- Send username immediately
 sendUsername()
-
--- Start all monitoring
 keepAlive()
 monitorInvite()
 pollSync()
-monitorCrewJoin()
 setupLeaveDetection()
 
 print("✅ Auto-join Pirates: ACTIVE")
 print("📡 Status: Waiting for invite...")
 print("========================================")
 
--- Keep alive
 while isRunning do
     task.wait(60)
     local status = "Waiting"
