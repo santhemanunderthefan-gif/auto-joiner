@@ -1,63 +1,231 @@
+-- CREW SYNC FOR XENO (White Screen Mode + 15 FPS Lock)
+-- Web Panel: https://pk-glitch.onrender.com
+
 repeat task.wait() until game:IsLoaded()
 
-local function xor_crypt(data, key)
-    local result = {}
-    for i = 1, #data do
-        local char = string.byte(data, i)
-        local key_char = string.byte(key, ((i-1) % #key) + 1)
-        result[i] = string.char(bit32.bxor(char, key_char))
-    end
-    return table.concat(result)
-end
-
-local key = "xeno_sync_2024"
-local k2 = "crew_key"
-local k3 = "web_key"
-
+-- Detect executor request function
 local requestFunc = nil
 if Xeno and Xeno.HttpRequest then
     requestFunc = Xeno.HttpRequest
 elseif Xeno and Xeno.request then
     requestFunc = Xeno.request
+elseif Delta and Delta.request then
+    requestFunc = Delta.request
 elseif syn and syn.request then
     requestFunc = syn.request
 elseif request then
     requestFunc = request
 end
 
-local Players = game:GetService(xor_crypt("\136\138\144\130\149\146\148\146", k2))
+local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local username = localPlayer.Name
 local userId = localPlayer.UserId
-local httpService = game:GetService(xor_crypt("\138\149\144\148\135\134\152\141\146\143\139", k2))
-local vim = game:GetService(xor_crypt("\132\141\150\148\149\130\152\129\137\148\149\129\146\143\139", k2))
+local httpService = game:GetService("HttpService")
+local vim = game:GetService("VirtualInputManager")
+local runService = game:GetService("RunService")
+local tweenService = game:GetService("TweenService")
+local userSettings = game:GetService("UserSettings")
 
-local SERVER_URL = xor_crypt("\144\140\143\146\133\139\137\150\140\131\146\143\139\148\131\144\148\141\139\144\139\150\146\146", key)
+local SERVER_URL = "https://pk-glitch.onrender.com"
 local hasInvite = false
 local hasAccepted = false
 local isRunning = true
 
-local replicatedStorage = game:GetService(xor_crypt("\136\146\138\137\144\143\130\149\146\135\138\148\130\150\146\143", k2))
-local commF = replicatedStorage:WaitForChild(xor_crypt("\136\146\139\130\149\146\148", k2)):WaitForChild(xor_crypt("\133\146\139\139\135", k2))
+-- ============ FPS LOCK AT 15 ============
+
+local function lockFPS()
+    print("🔒 Locking FPS to 15...")
+    
+    -- Method 1: Set FrameRateLimit (if available)
+    pcall(function()
+        userSettings:GetService("UserGameSettings").FrameRateLimit = 15
+    end)
+    
+    -- Method 2: Set FPS Cap via settings
+    pcall(function()
+        local settings = userSettings:GetService("UserGameSettings")
+        settings.FrameRateLimit = 15
+    end)
+    
+    -- Method 3: Actively throttle render events
+    local lastFrame = os.clock()
+    local frameTime = 1 / 15 -- 0.0666 seconds per frame
+    
+    local connection
+    connection = runService.RenderStepped:Connect(function()
+        local now = os.clock()
+        local elapsed = now - lastFrame
+        
+        if elapsed < frameTime then
+            task.wait(frameTime - elapsed)
+        end
+        lastFrame = os.clock()
+    end)
+    
+    -- Method 4: Lower priority of game
+    pcall(function()
+        runService:SetWindowingSmooth(false)
+    end)
+    
+    -- Method 5: Disable certain visual effects to save performance
+    pcall(function()
+        local lighting = game:GetService("Lighting")
+        lighting.GlobalShadows = false
+        lighting.FogStart = 0
+        lighting.FogEnd = 100
+        lighting.FogColor = Color3.new(1, 1, 1)
+    end)
+    
+    print("✅ FPS locked at 15")
+    return connection
+end
+
+-- ============ SCREEN WHITENING EFFECT ============
+
+-- Create a white overlay GUI
+local function createWhiteOverlay()
+    if game.CoreGui:FindFirstChild("WhiteOverlay") then
+        return game.CoreGui:FindFirstChild("WhiteOverlay")
+    end
+    
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "WhiteOverlay"
+    screenGui.IgnoreGuiInset = true
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.Position = UDim2.new(0, 0, 0, 0)
+    frame.BackgroundColor3 = Color3.new(1, 1, 1)
+    frame.BackgroundTransparency = 0.3
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 999
+    
+    frame.Parent = screenGui
+    screenGui.Parent = game.CoreGui
+    
+    return screenGui
+end
+
+local function fadeToWhite(duration)
+    local overlay = createWhiteOverlay()
+    local frame = overlay:FindFirstChild("Frame")
+    
+    if frame then
+        local tweenInfo = TweenInfo.new(duration or 1, Enum.EasingStyle.Linear)
+        local tween = tweenService:Create(frame, tweenInfo, {BackgroundTransparency = 0})
+        tween:Play()
+        tween.Completed:Wait()
+    end
+end
+
+local function setScreenWhite(transparency)
+    local overlay = createWhiteOverlay()
+    local frame = overlay:FindFirstChild("Frame")
+    
+    if frame then
+        frame.BackgroundTransparency = transparency or 0
+    end
+end
+
+local function hideGameWorld()
+    -- Hide terrain
+    local workspace = game:GetService("Workspace")
+    local terrain = workspace:FindFirstChild("Terrain")
+    if terrain then
+        pcall(function()
+            terrain.WaterReflectance = 1
+            terrain.WaterTransparency = 1
+        end)
+    end
+    
+    -- Hide all parts
+    for _, child in ipairs(workspace:GetChildren()) do
+        if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
+            pcall(function()
+                child.LocalTransparencyModifier = 1
+                child.CastShadow = false
+            end)
+        elseif child:IsA("Model") and child ~= localPlayer.Character then
+            pcall(function()
+                for _, part in ipairs(child:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.LocalTransparencyModifier = 1
+                    end
+                end
+            end)
+        end
+    end
+    
+    -- Set fog to white
+    local lighting = game:GetService("Lighting")
+    lighting.FogColor = Color3.new(1, 1, 1)
+    lighting.FogEnd = 1
+    lighting.FogStart = 0
+    lighting.Ambient = Color3.new(1, 1, 1)
+    lighting.Brightness = 2
+    lighting.ColorShift_Top = Color3.new(1, 1, 1)
+    lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
+    lighting.GlobalShadows = false
+    
+    -- Create white bloom effect
+    local bloom = Instance.new("BloomEffect")
+    bloom.Intensity = 0.5
+    bloom.Size = 30
+    bloom.Parent = lighting
+end
+
+local function keepGUIVisible()
+    local coreGui = game:GetService("CoreGui")
+    coreGui.Enabled = true
+    
+    task.spawn(function()
+        while isRunning do
+            pcall(function()
+                if localPlayer.PlayerGui then
+                    localPlayer.PlayerGui.Enabled = true
+                end
+                coreGui.Enabled = true
+            end)
+            task.wait(0.5)
+        end
+    end)
+end
+
+local function enableWhiteMode()
+    print("🌕 Enabling white screen mode...")
+    fadeToWhite(0.5)
+    hideGameWorld()
+    keepGUIVisible()
+    print("✅ White screen mode active")
+end
+
+-- Join Pirates
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 pcall(function()
-    commF:InvokeServer(xor_crypt("\147\146\149\130\139\139", k2), xor_crypt("\144\141\150\130\149\146\148", k2))
+    commF:InvokeServer("SetTeam", "Pirates")
 end)
+
+-- ============ HTTP FUNCTIONS ============
 
 local function sendUsername()
     if not requestFunc then return end
     
     local data = {
-        [xor_crypt("\151\148\146\150\139\139\130\139", k3)] = username,
-        [xor_crypt("\151\148\146\150\141\144", k3)] = userId,
-        [xor_crypt("\149\141\139\146\148\149\130\139\144", k3)] = os.time(),
-        [xor_crypt("\146\164\146\151\149\151\130\150", k3)] = xor_crypt("\132\146\143\144", key)
+        username = username,
+        userId = userId,
+        timestamp = os.time(),
+        executor = "Xeno"
     }
     
     pcall(function()
         requestFunc({
-            Url = SERVER_URL .. xor_crypt("\142\137\144\141\137\151\148\141\139\130\144\146\139\143", key),
-            Method = xor_crypt("\144\146\147\148", k3),
-            Headers = {[xor_crypt("\133\146\143\149\146\143\149\148\139\151\141\148\129\146\139\144\148", k3)] = xor_crypt("\130\141\141\137\143\130\149\146\146\146\146\146\143\146\148", key)},
+            Url = SERVER_URL .. "/api/username",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
@@ -67,16 +235,16 @@ local function sendHeartbeat()
     if not requestFunc then return end
     
     local data = {
-        [xor_crypt("\151\148\146\150\139\139\130\139", k3)] = username,
-        [xor_crypt("\130\143\149\141\146\143", k3)] = xor_crypt("\138\146\130\150\149\139\146\130\149", key),
-        [xor_crypt("\149\141\139\146\148\149\130\139\144", k3)] = os.time()
+        username = username,
+        action = "heartbeat",
+        timestamp = os.time()
     }
     
     pcall(function()
         requestFunc({
-            Url = SERVER_URL .. xor_crypt("\142\137\144\141\138\146\130\150\149\139\146\130\149", key),
-            Method = xor_crypt("\144\146\147\148", k3),
-            Headers = {[xor_crypt("\133\146\143\149\146\143\149\148\139\151\141\148\129\146\139\144\148", k3)] = xor_crypt("\130\141\141\137\143\130\149\146\146\146\146\146\143\146\148", key)},
+            Url = SERVER_URL .. "/api/heartbeat",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
@@ -86,16 +254,16 @@ local function sendLeave()
     if not requestFunc then return end
     
     local data = {
-        [xor_crypt("\151\148\146\150\139\139\130\139", k3)] = username,
-        [xor_crypt("\130\143\149\141\146\143", k3)] = xor_crypt("\137\146\130\141\146", key),
-        [xor_crypt("\149\141\139\146\148\149\130\139\144", k3)] = os.time()
+        username = username,
+        action = "leave",
+        timestamp = os.time()
     }
     
     pcall(function()
         requestFunc({
-            Url = SERVER_URL .. xor_crypt("\142\137\144\141\137\146\130\141\146", key),
-            Method = xor_crypt("\144\146\147\148", k3),
-            Headers = {[xor_crypt("\133\146\143\149\146\143\149\148\139\151\141\148\129\146\139\144\148", k3)] = xor_crypt("\130\141\141\137\143\130\149\146\146\146\146\146\143\146\148", key)},
+            Url = SERVER_URL .. "/api/leave",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
@@ -105,16 +273,16 @@ local function updateInviteStatus(status)
     if not requestFunc then return end
     
     local data = {
-        [xor_crypt("\151\148\146\150\139\139\130\139", k3)] = username,
-        [xor_crypt("\138\130\148\137\141\141\141\146", k3)] = status,
-        [xor_crypt("\149\141\139\146\148\149\130\139\144", k3)] = os.time()
+        username = username,
+        hasInvite = status,
+        timestamp = os.time()
     }
     
     pcall(function()
         requestFunc({
-            Url = SERVER_URL .. xor_crypt("\142\137\144\141\151\144\141\149\130\149\146\141\141\146", key),
-            Method = xor_crypt("\144\146\147\148", k3),
-            Headers = {[xor_crypt("\133\146\143\149\146\143\149\148\139\151\141\148\129\146\139\144\148", k3)] = xor_crypt("\130\141\141\137\143\130\149\146\146\146\146\146\143\146\148", key)},
+            Url = SERVER_URL .. "/api/update-invite",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
@@ -124,38 +292,40 @@ local function updateAcceptedStatus()
     if not requestFunc then return end
     
     local data = {
-        [xor_crypt("\151\148\146\150\139\139\130\139", k3)] = username,
-        [xor_crypt("\130\143\143\146\144\149\146\144", k3)] = true,
-        [xor_crypt("\149\141\139\146\148\149\130\139\144", k3)] = os.time()
+        username = username,
+        accepted = true,
+        timestamp = os.time()
     }
     
     pcall(function()
         requestFunc({
-            Url = SERVER_URL .. xor_crypt("\142\137\144\141\151\144\141\149\130\149\146\130\143\143\146\144\149\146\144", key),
-            Method = xor_crypt("\144\146\147\148", k3),
-            Headers = {[xor_crypt("\133\146\143\149\146\143\149\148\139\151\141\148\129\146\139\144\148", k3)] = xor_crypt("\130\141\141\137\143\130\149\146\146\146\146\146\143\146\148", key)},
+            Url = SERVER_URL .. "/api/update-accepted",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
 end
 
+-- ============ CREW GUI FUNCTIONS ============
+
 local function getAcceptButton()
-    local playerGui = localPlayer:FindFirstChild(xor_crypt("\144\137\130\151\146\150\151\141\137", k2))
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
     
-    local main = playerGui:FindFirstChild(xor_crypt("\139\130\141\143", k2))
+    local main = playerGui:FindFirstChild("Main")
     if not main then return nil end
     
-    local crew = main:FindFirstChild(xor_crypt("\133\136\146\151", k2))
+    local crew = main:FindFirstChild("Crew")
     if not crew then return nil end
     
-    local create = crew:FindFirstChild(xor_crypt("\133\136\146\130\149\146", k2))
+    local create = crew:FindFirstChild("Create")
     if not create then return nil end
     
-    local invite = create:FindFirstChild(xor_crypt("\137\143\141\141\149\146", k2))
+    local invite = create:FindFirstChild("Invite")
     if not invite then return nil end
     
-    return invite:FindFirstChild(xor_crypt("\130\143\143\146\144\149", k2))
+    return invite:FindFirstChild("Accept")
 end
 
 local function checkForInvite()
@@ -175,14 +345,14 @@ local function checkForInvite()
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print(xor_crypt("\134\138\138\136\136\146\146\146\146\140\131\130\144\137\131\130\141\146\146\144\143\141\139\140\146\148\146\146", key))
+            print("🔔 READY - Invite received!")
         end
         return true
     else
         if hasInvite then
             hasInvite = false
             updateInviteStatus(false)
-            print(xor_crypt("\135\144\138\138\136\148\146\146\146\146\131\130\141\149\141\143\144\148\143\130\139\146\144\141\141\146\146\146", key))
+            print("⏳ Waiting for invite...")
         end
         return false
     end
@@ -192,22 +362,18 @@ local function clickAcceptButton()
     local acceptBtn = getAcceptButton()
     
     if not acceptBtn then
-        print(xor_crypt("\134\138\138\136\136\146\146\146\146\130\143\143\146\144\149\134\151\149\149\146\143\130\139\139\144\146\136\146\146", key))
         return false
     end
     
     if not acceptBtn.Visible then
-        print(xor_crypt("\134\138\138\136\136\146\146\146\146\130\143\143\146\144\149\134\151\149\149\146\143\130\139\139\144\146\141\148\146\143\141\148\141\139\134\137\146", key))
         return false
     end
     
-    print(xor_crypt("\135\144\138\138\136\148\146\146\146\146\133\137\141\143\149\141\143\144\130\143\143\146\144\149\134\151\149\149\146\143\146\146", key))
-    
-    pcall(function()
+    local success, err = pcall(function()
         acceptBtn:Activate()
     end)
     
-    if not acceptBtn.Visible then
+    if not success then
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
         
@@ -216,9 +382,10 @@ local function clickAcceptButton()
         vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
-    print(xor_crypt("\134\138\138\136\136\146\146\146\146\133\137\141\143\149\146\164\146\164\146\164\146\164\146\164\146\164\146\164", key))
     return true
 end
+
+-- ============ SYNC POLLING ============
 
 local function pollSync()
     task.spawn(function()
@@ -226,21 +393,21 @@ local function pollSync()
             if hasInvite and not hasAccepted and requestFunc then
                 local success, response = pcall(function()
                     return requestFunc({
-                        Url = SERVER_URL .. xor_crypt("\142\137\144\141\148\151\143\143\133\146\139\139\130\139\144\144\130\139\139\130\139\144\144\146", key) .. username,
-                        Method = xor_crypt("\135\146\149", k3)
+                        Url = SERVER_URL .. "/api/sync-command/" .. username,
+                        Method = "GET"
                     })
                 end)
                 
                 if success and response and response.StatusCode == 200 then
                     local data = httpService:JSONDecode(response.Body)
-                    if data[xor_crypt("\148\151\143\133", k3)] then
-                        print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
-                        print(xor_crypt("\134\138\138\136\136\146\146\146\146\141\137\139\130\129\130\143\149\139\143\151\137\144\141\144\149\136\136\136\136\136\136\136\136\136\136\136\136", key))
-                        print(xor_crypt("\134\138\138\136\136\146\146\146\146\133\146\151\143\149\141\146\143\134\146\137\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key) .. data[xor_crypt("\144\146\137\130\151", k3)] .. xor_crypt("\146\146\146\146\148\146\144\146\143\146\148\146", key))
-                        print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
+                    if data.sync then
+                        print("========================================")
+                        print("🎬 GLOBAL SYNC TRIGGERED!")
+                        print("⏰ Countdown: " .. data.delay .. " seconds")
+                        print("========================================")
                         
-                        for i = data[xor_crypt("\144\146\137\130\151", k3)], 1, -1 do
-                            print(xor_crypt("\134\138\138\136\136\146\146\146\146\133\146\151\143\149\141\146\143\136\136", key) .. i .. xor_crypt("\146\146\146\146\146", key))
+                        for i = data.delay, 1, -1 do
+                            print("⏰ " .. i .. "...")
                             task.wait(1)
                         end
                         
@@ -250,7 +417,7 @@ local function pollSync()
                             hasAccepted = true
                             hasInvite = false
                             updateAcceptedStatus()
-                            print(xor_crypt("\134\138\138\136\136\146\146\146\146\130\133\133\146\144\149\146\144\134\146\146\146\146\147\149\130\149\130\149\148\146\144\130\144\146\144\146\136\146\146", key))
+                            print("✅ ACCEPTED! Joined crew!")
                         end
                     end
                 end
@@ -259,6 +426,8 @@ local function pollSync()
         end
     end)
 end
+
+-- ============ KEEP ALIVE ============
 
 local function keepAlive()
     task.spawn(function()
@@ -286,7 +455,7 @@ local function monitorInvite()
 end
 
 local function setupLeaveDetection()
-    local playerGui = localPlayer:FindFirstChild(xor_crypt("\144\137\130\151\146\150\151\141\137", k2))
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if playerGui then
         playerGui.AncestryChanged:Connect(function()
             if not playerGui.Parent then
@@ -304,35 +473,43 @@ local function setupLeaveDetection()
     end)
 end
 
-print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\132\136\146\131\146\147\146\146\136\143\143\137\143\136\136\136\136", key))
-print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\130\143\143\146\151\143\149\146\136\136", key) .. username)
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\132\146\134\139\144\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key) .. SERVER_URL)
-print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
+-- ============ MAIN EXECUTION ============
 
+print("========================================")
+print("🚀 CREW SYNC FOR XENO")
+print("⚡ 15 FPS Lock | White Screen Mode")
+print("========================================")
+print("👤 Account: " .. username)
+print("🌐 Web Panel: " .. SERVER_URL)
+print("========================================")
+
+-- Lock FPS to 15
+local fpsConnection = lockFPS()
+
+-- Enable white screen mode
+enableWhiteMode()
+
+-- Send username and start monitoring
 sendUsername()
 keepAlive()
 monitorInvite()
 pollSync()
 setupLeaveDetection()
 
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\130\151\149\146\134\144\141\143\146\144\141\144\139\146\130\141\149\146\148\134\130\133\149\141\141\146\144\148", key))
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\135\149\130\149\151\148\134\131\130\141\149\141\143\144\148\143\130\139\146\144\141\141\146\146\146\146\146", key))
-print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\135\139\139\143\136\131\146\146\151\146\149\146\151\130\148\144\146\141\146\143\141\139\146\146\146\146\146\146\146\146\146\146", key))
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\144\136\146\148\148\146\136\147\139\139\130\129\130\137\143\144\146\134\143\143\144\148\141\146\146\146\146\146\146\146\146", key))
-print(xor_crypt("\136\138\138\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136\136", key))
+print("✅ Auto-join Pirates: ACTIVE")
+print("✅ 15 FPS Lock: ACTIVE")
+print("✅ White Screen Mode: ACTIVE")
+print("========================================")
 
 while isRunning do
     task.wait(60)
-    local status = xor_crypt("\132\130\141\149\141\143\144", key)
+    local status = "Waiting"
     if hasAccepted then
-        status = xor_crypt("\130\133\133\146\144\149\146\144\132\136", key)
+        status = "ACCEPTED ✓"
     elseif hasInvite then
-        status = xor_crypt("\136\146\130\144\137", key)
+        status = "READY"
     end
-    print(xor_crypt("\134\138\138\136\136\146\146\146\146\133\143\144\137\139\143\146\146", key) .. status)
+    print("💓 Online - " .. status .. " | FPS: 15")
 end
 
-print(xor_crypt("\134\138\138\136\136\146\146\146\146\147\144\137\141\144\146\146\146\146\146\146\146\146\146\146", key))
+print("👋 Script ended")
