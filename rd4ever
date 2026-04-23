@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (White Screen Mode + 15 FPS Lock)
+-- CREW SYNC FOR XENO (WORKING)
 -- Web Panel: https://pk-glitch.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -24,195 +24,55 @@ local userId = localPlayer.UserId
 local httpService = game:GetService("HttpService")
 local vim = game:GetService("VirtualInputManager")
 local runService = game:GetService("RunService")
-local tweenService = game:GetService("TweenService")
-local userSettings = game:GetService("UserSettings")
 
 local SERVER_URL = "https://pk-glitch.onrender.com"
 local hasInvite = false
 local hasAccepted = false
 local isRunning = true
 
--- ============ FPS LOCK AT 15 ============
-
+-- ============ WORKING FPS CAP AT 15 ============
 local function lockFPS()
-    print("🔒 Locking FPS to 15...")
+    print("🔒 Setting FPS cap to 15...")
     
-    -- Method 1: Set FrameRateLimit (if available)
+    -- Method 1: Set FrameRateLimit
     pcall(function()
-        userSettings:GetService("UserGameSettings").FrameRateLimit = 15
+        local UserSettings = game:GetService("UserSettings")
+        local GameSettings = UserSettings:GetService("UserGameSettings")
+        GameSettings.FrameRateLimit = 15
     end)
     
-    -- Method 2: Set FPS Cap via settings
+    -- Method 2: Another way
     pcall(function()
-        local settings = userSettings:GetService("UserGameSettings")
-        settings.FrameRateLimit = 15
+        settings().Rendering.QualityLevel = 1
+        settings().Rendering.AutoFRMLevel = 2
     end)
     
-    -- Method 3: Actively throttle render events
-    local lastFrame = os.clock()
-    local frameTime = 1 / 15 -- 0.0666 seconds per frame
+    -- Method 3: Throttle RenderStepped
+    local frameTime = 1 / 15
+    local lastTime = tick()
     
     local connection
     connection = runService.RenderStepped:Connect(function()
-        local now = os.clock()
-        local elapsed = now - lastFrame
-        
-        if elapsed < frameTime then
-            task.wait(frameTime - elapsed)
+        local currentTime = tick()
+        local delta = currentTime - lastTime
+        if delta < frameTime then
+            task.wait(frameTime - delta)
         end
-        lastFrame = os.clock()
+        lastTime = tick()
     end)
     
-    -- Method 4: Lower priority of game
-    pcall(function()
-        runService:SetWindowingSmooth(false)
-    end)
-    
-    -- Method 5: Disable certain visual effects to save performance
-    pcall(function()
-        local lighting = game:GetService("Lighting")
-        lighting.GlobalShadows = false
-        lighting.FogStart = 0
-        lighting.FogEnd = 100
-        lighting.FogColor = Color3.new(1, 1, 1)
-    end)
-    
-    print("✅ FPS locked at 15")
+    print("✅ FPS cap set to 15")
     return connection
 end
 
--- ============ SCREEN WHITENING EFFECT ============
+-- ============ SEND SIGNALS TO WEBSITE ============
 
--- Create a white overlay GUI
-local function createWhiteOverlay()
-    if game.CoreGui:FindFirstChild("WhiteOverlay") then
-        return game.CoreGui:FindFirstChild("WhiteOverlay")
-    end
-    
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "WhiteOverlay"
-    screenGui.IgnoreGuiInset = true
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1, 0, 1, 0)
-    frame.Position = UDim2.new(0, 0, 0, 0)
-    frame.BackgroundColor3 = Color3.new(1, 1, 1)
-    frame.BackgroundTransparency = 0.3
-    frame.BorderSizePixel = 0
-    frame.ZIndex = 999
-    
-    frame.Parent = screenGui
-    screenGui.Parent = game.CoreGui
-    
-    return screenGui
-end
-
-local function fadeToWhite(duration)
-    local overlay = createWhiteOverlay()
-    local frame = overlay:FindFirstChild("Frame")
-    
-    if frame then
-        local tweenInfo = TweenInfo.new(duration or 1, Enum.EasingStyle.Linear)
-        local tween = tweenService:Create(frame, tweenInfo, {BackgroundTransparency = 0})
-        tween:Play()
-        tween.Completed:Wait()
-    end
-end
-
-local function setScreenWhite(transparency)
-    local overlay = createWhiteOverlay()
-    local frame = overlay:FindFirstChild("Frame")
-    
-    if frame then
-        frame.BackgroundTransparency = transparency or 0
-    end
-end
-
-local function hideGameWorld()
-    -- Hide terrain
-    local workspace = game:GetService("Workspace")
-    local terrain = workspace:FindFirstChild("Terrain")
-    if terrain then
-        pcall(function()
-            terrain.WaterReflectance = 1
-            terrain.WaterTransparency = 1
-        end)
-    end
-    
-    -- Hide all parts
-    for _, child in ipairs(workspace:GetChildren()) do
-        if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
-            pcall(function()
-                child.LocalTransparencyModifier = 1
-                child.CastShadow = false
-            end)
-        elseif child:IsA("Model") and child ~= localPlayer.Character then
-            pcall(function()
-                for _, part in ipairs(child:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.LocalTransparencyModifier = 1
-                    end
-                end
-            end)
-        end
-    end
-    
-    -- Set fog to white
-    local lighting = game:GetService("Lighting")
-    lighting.FogColor = Color3.new(1, 1, 1)
-    lighting.FogEnd = 1
-    lighting.FogStart = 0
-    lighting.Ambient = Color3.new(1, 1, 1)
-    lighting.Brightness = 2
-    lighting.ColorShift_Top = Color3.new(1, 1, 1)
-    lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
-    lighting.GlobalShadows = false
-    
-    -- Create white bloom effect
-    local bloom = Instance.new("BloomEffect")
-    bloom.Intensity = 0.5
-    bloom.Size = 30
-    bloom.Parent = lighting
-end
-
-local function keepGUIVisible()
-    local coreGui = game:GetService("CoreGui")
-    coreGui.Enabled = true
-    
-    task.spawn(function()
-        while isRunning do
-            pcall(function()
-                if localPlayer.PlayerGui then
-                    localPlayer.PlayerGui.Enabled = true
-                end
-                coreGui.Enabled = true
-            end)
-            task.wait(0.5)
-        end
-    end)
-end
-
-local function enableWhiteMode()
-    print("🌕 Enabling white screen mode...")
-    fadeToWhite(0.5)
-    hideGameWorld()
-    keepGUIVisible()
-    print("✅ White screen mode active")
-end
-
--- Join Pirates
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
-pcall(function()
-    commF:InvokeServer("SetTeam", "Pirates")
-end)
-
--- ============ HTTP FUNCTIONS ============
-
+-- Send username to server
 local function sendUsername()
-    if not requestFunc then return end
+    if not requestFunc then 
+        print("⚠️ No HTTP function available")
+        return 
+    end
     
     local data = {
         username = username,
@@ -221,16 +81,23 @@ local function sendUsername()
         executor = "Xeno"
     }
     
-    pcall(function()
-        requestFunc({
+    local success, response = pcall(function()
+        return requestFunc({
             Url = SERVER_URL .. "/api/username",
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
+    
+    if success then
+        print("✅ Username sent: " .. username)
+    else
+        print("❌ Failed to send username")
+    end
 end
 
+-- Send heartbeat
 local function sendHeartbeat()
     if not requestFunc then return end
     
@@ -250,6 +117,7 @@ local function sendHeartbeat()
     end)
 end
 
+-- Send leave signal
 local function sendLeave()
     if not requestFunc then return end
     
@@ -269,6 +137,7 @@ local function sendLeave()
     end)
 end
 
+-- Update invite status
 local function updateInviteStatus(status)
     if not requestFunc then return end
     
@@ -288,6 +157,7 @@ local function updateInviteStatus(status)
     end)
 end
 
+-- Update accepted status
 local function updateAcceptedStatus()
     if not requestFunc then return end
     
@@ -307,8 +177,17 @@ local function updateAcceptedStatus()
     end)
 end
 
--- ============ CREW GUI FUNCTIONS ============
+-- ============ CREW FUNCTIONS ============
 
+-- Join Pirates
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+    print("✅ Joined Pirates team")
+end)
+
+-- Get Accept button
 local function getAcceptButton()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
@@ -328,24 +207,17 @@ local function getAcceptButton()
     return invite:FindFirstChild("Accept")
 end
 
+-- Check for invite
 local function checkForInvite()
     if hasAccepted then return false end
     
     local acceptBtn = getAcceptButton()
     
-    local hasRealInvite = false
-    if acceptBtn then
-        local invite = acceptBtn.Parent
-        if invite and invite.Visible == true then
-            hasRealInvite = acceptBtn.Visible == true and acceptBtn.Active == true
-        end
-    end
-    
-    if hasRealInvite then
+    if acceptBtn and acceptBtn.Visible then
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print("🔔 READY - Invite received!")
+            print("🔔 INVITE RECEIVED! Ready for sync")
         end
         return true
     else
@@ -358,22 +230,23 @@ local function checkForInvite()
     end
 end
 
+-- Click accept button
 local function clickAcceptButton()
     local acceptBtn = getAcceptButton()
     
-    if not acceptBtn then
+    if not acceptBtn or not acceptBtn.Visible then
         return false
     end
     
-    if not acceptBtn.Visible then
-        return false
-    end
+    print("🎯 Clicking Accept button...")
     
-    local success, err = pcall(function()
+    -- Try direct activation
+    local success = pcall(function()
         acceptBtn:Activate()
     end)
     
     if not success then
+        -- Hardware click
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
         
@@ -382,11 +255,11 @@ local function clickAcceptButton()
         vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
+    print("✅ Clicked accept!")
     return true
 end
 
--- ============ SYNC POLLING ============
-
+-- Poll for sync commands
 local function pollSync()
     task.spawn(function()
         while isRunning do
@@ -406,11 +279,13 @@ local function pollSync()
                         print("⏰ Countdown: " .. data.delay .. " seconds")
                         print("========================================")
                         
+                        -- Countdown
                         for i = data.delay, 1, -1 do
-                            print("⏰ " .. i .. "...")
+                            print("⏰ " .. i)
                             task.wait(1)
                         end
                         
+                        -- Click the button
                         local clicked = clickAcceptButton()
                         
                         if clicked then
@@ -427,8 +302,7 @@ local function pollSync()
     end)
 end
 
--- ============ KEEP ALIVE ============
-
+-- Keep alive (heartbeat every 5 seconds)
 local function keepAlive()
     task.spawn(function()
         while isRunning do
@@ -445,6 +319,7 @@ local function keepAlive()
     end)
 end
 
+-- Monitor for invites
 local function monitorInvite()
     task.spawn(function()
         while isRunning do
@@ -454,17 +329,8 @@ local function monitorInvite()
     end)
 end
 
+-- Leave detection
 local function setupLeaveDetection()
-    local playerGui = localPlayer:FindFirstChild("PlayerGui")
-    if playerGui then
-        playerGui.AncestryChanged:Connect(function()
-            if not playerGui.Parent then
-                sendLeave()
-                isRunning = false
-            end
-        end)
-    end
-    
     localPlayer.AncestryChanged:Connect(function()
         if not localPlayer.Parent then
             sendLeave()
@@ -473,11 +339,10 @@ local function setupLeaveDetection()
     end)
 end
 
--- ============ MAIN EXECUTION ============
+-- ============ MAIN ============
 
 print("========================================")
 print("🚀 CREW SYNC FOR XENO")
-print("⚡ 15 FPS Lock | White Screen Mode")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
@@ -486,30 +351,28 @@ print("========================================")
 -- Lock FPS to 15
 local fpsConnection = lockFPS()
 
--- Enable white screen mode
-enableWhiteMode()
-
--- Send username and start monitoring
+-- Send initial username
 sendUsername()
+
+-- Start all processes
 keepAlive()
 monitorInvite()
 pollSync()
 setupLeaveDetection()
 
-print("✅ Auto-join Pirates: ACTIVE")
-print("✅ 15 FPS Lock: ACTIVE")
-print("✅ White Screen Mode: ACTIVE")
+print("✅ Auto-join Pirates: ON")
+print("✅ FPS Cap: 15 FPS")
+print("✅ Signal sending: ACTIVE")
 print("========================================")
 
+-- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
     if hasAccepted then
-        status = "ACCEPTED ✓"
+        status = "ACCEPTED"
     elseif hasInvite then
         status = "READY"
     end
-    print("💓 Online - " .. status .. " | FPS: 15")
+    print("💓 Online - " .. status)
 end
-
-print("👋 Script ended")
