@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (Direct Remote Invoke - No Clicks)
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features)
 -- Web Panel: https://pk-glitch.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -22,9 +22,11 @@ local localPlayer = Players.LocalPlayer
 local username = localPlayer.Name
 local userId = localPlayer.UserId
 local httpService = game:GetService("HttpService")
+local vim = game:GetService("VirtualInputManager")
 local runService = game:GetService("RunService")
 local lighting = game:GetService("Lighting")
 local workspace = game:GetService("Workspace")
+local starterGui = game:GetService("StarterGui")
 
 local SERVER_URL = "https://pk-glitch.onrender.com"
 local hasInvite = false
@@ -61,14 +63,16 @@ local function lockFPS()
     print("✅ FPS cap set to 15")
 end
 
--- ============ WHITE SCREEN ============
+-- ============ WHITE SCREEN (Full White) ============
 local function enableWhiteScreen()
     print("🌕 Enabling white screen mode...")
     
+    -- Create white overlay GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "WhiteScreenOverlay"
     screenGui.IgnoreGuiInset = true
     screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
     local whiteFrame = Instance.new("Frame")
     whiteFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -83,12 +87,31 @@ local function enableWhiteScreen()
         screenGui.Parent = game:GetService("CoreGui")
     end)
     
+    -- Make game world white
     pcall(function()
         lighting.Ambient = Color3.new(1, 1, 1)
         lighting.Brightness = 2
+        lighting.ClockTime = 12
         lighting.FogColor = Color3.new(1, 1, 1)
         lighting.FogEnd = 0.1
+        lighting.FogStart = 0
         lighting.GlobalShadows = false
+        lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+    end)
+    
+    -- Hide parts
+    pcall(function()
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
+                child.Transparency = 1
+            elseif child:IsA("Model") and child ~= localPlayer.Character then
+                for _, part in ipairs(child:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Transparency = 1
+                    end
+                end
+            end
+        end
     end)
     
     print("✅ White screen mode enabled")
@@ -98,89 +121,68 @@ end
 local function clickCrewButton()
     if crewButtonClicked then return end
     
-    print("🎯 Opening Crew menu...")
-    task.wait(2)
+    print("🎯 Looking for CrewButton...")
     
+    -- Wait for PlayerGui to load
+    repeat task.wait(0.5) until localPlayer.PlayerGui
+    
+    -- Try to find the CrewButton in different possible locations
     local crewButton = nil
+    
+    -- Method 1: StarterGui path
     pcall(function()
-        if localPlayer.PlayerGui then
-            crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
+        if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
+            crewButton = starterGui.Main.HUDButtonBar.CrewButton
         end
     end)
     
-    if crewButton and crewButton.Visible then
+    -- Method 2: PlayerGui path
+    if not crewButton then
         pcall(function()
-            crewButton:Activate()
-        end)
-        crewButtonClicked = true
-        print("✅ Crew menu opened")
-    end
-end
-
--- ============ DIRECT REMOTE TO ACCEPT INVITE (NO CLICK) ============
-local function acceptInviteDirectly()
-    print("🎯 Accepting invite directly via remote...")
-    
-    -- Find the remote for accepting invites
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    local remotes = replicatedStorage:FindFirstChild("Remotes")
-    
-    if not remotes then
-        print("❌ Remotes folder not found!")
-        return false
-    end
-    
-    -- Look for the accept invite remote
-    local acceptRemote = remotes:FindFirstChild("AcceptInvite")
-    if not acceptRemote then
-        acceptRemote = remotes:FindFirstChild("JoinCrew")
-    end
-    if not acceptRemote then
-        acceptRemote = remotes:FindFirstChild("AcceptCrewInvite")
-    end
-    if not acceptRemote then
-        acceptRemote = remotes:FindFirstChild("RespondToInvite")
-    end
-    
-    if acceptRemote then
-        print("✅ Found remote: " .. acceptRemote.Name)
-        
-        -- Try to fire/invoke it
-        local success = pcall(function()
-            if acceptRemote:IsA("RemoteEvent") then
-                acceptRemote:FireServer(true) -- true = accept
-                print("✅ Fired RemoteEvent to accept invite")
-            elseif acceptRemote:IsA("RemoteFunction") then
-                acceptRemote:InvokeServer(true)
-                print("✅ Invoked RemoteFunction to accept invite")
+            if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
+                crewButton = localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton
             end
         end)
-        
-        if success then
-            return true
-        end
     end
     
-    -- Alternative: Look for CommF_ remote (same as joining Pirates)
-    local commF = remotes:FindFirstChild("CommF_")
-    if commF then
-        print("🔄 Trying CommF_ remote...")
-        local success = pcall(function()
-            commF:InvokeServer("AcceptInvite")
+    -- Method 3: Search for CrewButton anywhere in PlayerGui
+    if not crewButton then
+        pcall(function()
+            crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
         end)
-        if success then
-            print("✅ Accepted via CommF_")
-            return true
-        end
     end
     
-    print("❌ Could not find accept remote")
-    return false
+    if crewButton and crewButton.Visible then
+        print("✅ Found CrewButton! Clicking...")
+        
+        -- Try to activate
+        local success = pcall(function()
+            crewButton:Activate()
+        end)
+        
+        if not success then
+            -- Hardware click
+            local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
+            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2) + 58
+            vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.1)
+            vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        end
+        
+        crewButtonClicked = true
+        print("✅ Crew button clicked! Crew menu should be open.")
+    else
+        print("⚠️ CrewButton not found - will retry")
+        -- Retry after 3 seconds
+        task.wait(3)
+        if not crewButtonClicked then
+            clickCrewButton()
+        end
+    end
 end
 
--- Alternative: Get the invite data and accept through remote
-local function acceptWithInviteData()
-    -- Find the current invite
+-- ============ CORRECT INVITE DETECTION ============
+local function hasRealInvite()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
     
@@ -196,30 +198,10 @@ local function acceptWithInviteData()
     local invite = create:FindFirstChild("Invite")
     if not invite then return false end
     
-    -- Try to get inviter name from the invite frame
-    local inviterName = nil
-    local inviterLabel = invite:FindFirstChild("InviterName")
-    if inviterLabel then
-        inviterName = inviterLabel.Text
-        print("📨 Invite from: " .. inviterName)
-    end
-    
-    -- Find the remote to accept
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    local remotes = replicatedStorage:FindFirstChild("Remotes")
-    
-    if remotes and inviterName then
-        local acceptRemote = remotes:FindFirstChild("AcceptCrewInvite")
-        if acceptRemote then
-            pcall(function()
-                if acceptRemote:IsA("RemoteEvent") then
-                    acceptRemote:FireServer(inviterName)
-                else
-                    acceptRemote:InvokeServer(inviterName)
-                end
-                print("✅ Accepted invite from: " .. inviterName)
-                return true
-            end)
+    if invite.Visible == true then
+        local acceptBtn = invite:FindFirstChild("Accept")
+        if acceptBtn and acceptBtn.Visible == true then
+            return true
         end
     end
     
@@ -246,6 +228,7 @@ local function sendUsername()
             Body = httpService:JSONEncode(data)
         })
     end)
+    print("📡 Username sent: " .. username)
 end
 
 local function sendHeartbeat()
@@ -328,76 +311,86 @@ end
 
 -- Join Pirates
 local replicatedStorage = game:GetService("ReplicatedStorage")
-local remotes = replicatedStorage:FindFirstChild("Remotes")
-local commF = remotes and remotes:FindFirstChild("CommF_")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+    print("✅ Joined Pirates team")
+end)
 
-if commF then
-    pcall(function()
-        commF:InvokeServer("SetTeam", "Pirates")
-        print("✅ Joined Pirates team")
-    end)
+-- Get Accept button
+local function getAcceptButton()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return nil end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return nil end
+    
+    local create = crew:FindFirstChild("Create")
+    if not create then return nil end
+    
+    local invite = create:FindFirstChild("Invite")
+    if not invite then return nil end
+    
+    return invite:FindFirstChild("Accept")
 end
 
--- Check for REAL invite (invite frame visible)
+-- Check for REAL invite
 local function checkForInvite()
     if hasAccepted then return false end
     
-    local playerGui = localPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return false end
+    local realInvite = hasRealInvite()
     
-    local main = playerGui:FindFirstChild("Main")
-    if not main then return false end
-    
-    local crew = main:FindFirstChild("Crew")
-    if not crew then return false end
-    
-    local create = crew:FindFirstChild("Create")
-    if not create then return false end
-    
-    local invite = create:FindFirstChild("Invite")
-    
-    if invite and invite.Visible == true then
+    if realInvite then
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print("🔔 INVITE DETECTED!")
+            print("🔔 REAL INVITE DETECTED! Ready for sync")
         end
         return true
     else
         if hasInvite then
             hasInvite = false
             updateInviteStatus(false)
+            print("⏳ No invite - Waiting...")
         end
         return false
     end
 end
 
--- Accept invite (NO CLICKS - Direct remote)
-local function acceptInvite()
+-- Click accept button
+local function clickAcceptButton()
     if hasAccepted then return true end
     
-    print("🎬 Accepting invite remotely...")
+    local acceptBtn = getAcceptButton()
     
-    -- Try method 1: Direct remote
-    if acceptInviteDirectly() then
-        hasAccepted = true
-        hasInvite = false
-        updateAcceptedStatus()
-        print("✅ ACCEPTED via remote!")
-        return true
+    if not acceptBtn or not acceptBtn.Visible then
+        print("❌ Accept button not visible")
+        return false
     end
     
-    -- Try method 2: With invite data
-    if acceptWithInviteData() then
-        hasAccepted = true
-        hasInvite = false
-        updateAcceptedStatus()
-        print("✅ ACCEPTED via invite data!")
-        return true
+    print("🎯 Clicking Accept button...")
+    
+    local success = pcall(function()
+        acceptBtn:Activate()
+    end)
+    
+    if not success then
+        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+        
+        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.1)
+        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
-    print("❌ Could not accept invite remotely")
-    return false
+    hasAccepted = true
+    hasInvite = false
+    updateAcceptedStatus()
+    print("✅ ACCEPTED! Joined crew!")
+    return true
 end
 
 -- Poll for sync commands
@@ -425,7 +418,7 @@ local function pollSync()
                             task.wait(1)
                         end
                         
-                        acceptInvite()
+                        clickAcceptButton()
                     end
                 end
             end
@@ -474,27 +467,45 @@ end
 -- ============ MAIN ============
 
 print("========================================")
-print("🚀 CREW SYNC FOR XENO (NO CLICKS)")
+print("🚀 CREW SYNC FOR XENO (COMPLETE)")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
+-- Apply FPS cap
 lockFPS()
+
+-- Enable white screen
 enableWhiteScreen()
+
+-- Join Pirates
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
+
+-- Send initial username
 sendUsername()
+
+-- Click CrewButton once after short delay
 task.wait(2)
 clickCrewButton()
 
+-- Start all processes
 keepAlive()
 monitorInvite()
 pollSync()
 setupLeaveDetection()
 
 print("✅ Auto-join Pirates: ON")
-print("✅ Accept Method: DIRECT REMOTE (no clicks)")
+print("✅ FPS Cap: 15 FPS")
+print("✅ White Screen: ON")
+print("✅ Crew Button: Auto-clicked once")
+print("✅ Invite Detection: ACTIVE")
+print("✅ Sync System: ACTIVE")
 print("========================================")
 
+-- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
