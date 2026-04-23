@@ -1,350 +1,272 @@
--- CREW SYNC FOR XENO
--- Web Panel: https://pk-glitch.onrender.com
-
-repeat task.wait() until game:IsLoaded()
-
--- Detect executor request function
-local requestFunc = nil
-if Xeno and Xeno.HttpRequest then
-    requestFunc = Xeno.HttpRequest
-elseif Xeno and Xeno.request then
-    requestFunc = Xeno.request
-elseif syn and syn.request then
-    requestFunc = syn.request
-elseif request then
-    requestFunc = request
+repeat _0x000b._0x000c() until _0x000d:_0x000e()
+local _0x0012 = nil
+if _0x0013 and _0x0013._0x0014 then
+_0x0012 = _0x0013._0x0014
+elseif _0x0013 and _0x0013._0x0011 then
+_0x0012 = _0x0013._0x0011
+elseif _0x0015 and _0x0015._0x0011 then
+_0x0012 = _0x0015._0x0011
+elseif _0x0011 then
+_0x0012 = _0x0011
 end
-
-local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
-local username = localPlayer.Name
-local userId = localPlayer.UserId
-local httpService = game:GetService("HttpService")
-local vim = game:GetService("VirtualInputManager")
-
-local SERVER_URL = "https://pk-glitch.onrender.com"
-local hasInvite = false
-local hasAccepted = false  -- Only becomes true AFTER sync click
-local isRunning = true
-
--- Join Pirates
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+local _0x0016 = _0x000d:_0x0017((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+local _0x001c = _0x0016._0x001d
+local _0x001e = _0x001c._0x001f
+local _0x0020 = _0x001c._0x0021
+local _0x0022 = _0x000d:_0x0017((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+local _0x0023 = _0x000d:_0x0017((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+local _0x0024 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+local _0x0025 = false
+local _0x0026 = false
+local _0x002c = true
+local _0x002f = _0x000d:_0x0017((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+local _0x0030 = _0x002f:_0x0031((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)):_0x0031((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
 pcall(function()
-    commF:InvokeServer("SetTeam", "Pirates")
+_0x0030:_0x0032((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end), (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
 end)
-
--- Send username to server
-local function sendUsername()
-    if not requestFunc then return end
-    
-    local data = {
-        username = username,
-        userId = userId,
-        timestamp = os.time(),
-        executor = "Xeno"
-    }
-    
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL .. "/api/username",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = httpService:JSONEncode(data)
-        })
-    end)
+local function _0x0036()
+if not _0x0012 then return end
+local _0x0037 = {
+_0x001e = _0x001e,
+_0x0020 = _0x0020,
+_0x0038 = os._0x0039(),
+_0x0010 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+}
+pcall(function()
+_0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003c = {[(function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)] = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)},
+_0x003d = _0x0022:_0x003e(_0x0037)
+})
+end)
 end
-
--- Send heartbeat
-local function sendHeartbeat()
-    if not requestFunc then return end
-    
-    local data = {
-        username = username,
-        action = "heartbeat",
-        timestamp = os.time()
-    }
-    
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL .. "/api/heartbeat",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = httpService:JSONEncode(data)
-        })
-    end)
+local function _0x0040()
+if not _0x0012 then return end
+local _0x0037 = {
+_0x001e = _0x001e,
+_0x0041 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x0038 = os._0x0039()
+}
+pcall(function()
+_0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003c = {[(function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)] = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)},
+_0x003d = _0x0022:_0x003e(_0x0037)
+})
+end)
 end
-
--- Send leave signal
-local function sendLeave()
-    if not requestFunc then return end
-    
-    local data = {
-        username = username,
-        action = "leave",
-        timestamp = os.time()
-    }
-    
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL .. "/api/leave",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = httpService:JSONEncode(data)
-        })
-    end)
+local function _0x0044()
+if not _0x0012 then return end
+local _0x0037 = {
+_0x001e = _0x001e,
+_0x0041 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x0038 = os._0x0039()
+}
+pcall(function()
+_0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003c = {[(function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)] = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)},
+_0x003d = _0x0022:_0x003e(_0x0037)
+})
+end)
 end
-
--- Update invite status
-local function updateInviteStatus(status)
-    if not requestFunc then return end
-    
-    local data = {
-        username = username,
-        hasInvite = status,
-        timestamp = os.time()
-    }
-    
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL .. "/api/update-invite",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = httpService:JSONEncode(data)
-        })
-    end)
+local function _0x0048(_0x0047)
+if not _0x0012 then return end
+local _0x0037 = {
+_0x001e = _0x001e,
+_0x0025 = _0x0047,
+_0x0038 = os._0x0039()
+}
+pcall(function()
+_0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003c = {[(function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)] = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)},
+_0x003d = _0x0022:_0x003e(_0x0037)
+})
+end)
 end
-
--- Update accepted status (ONLY called when sync click happens)
-local function updateAcceptedStatus()
-    if not requestFunc then return end
-    
-    local data = {
-        username = username,
-        accepted = true,
-        timestamp = os.time()
-    }
-    
-    pcall(function()
-        requestFunc({
-            Url = SERVER_URL .. "/api/update-accepted",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = httpService:JSONEncode(data)
-        })
-    end)
+local function _0x004e()
+if not _0x0012 then return end
+local _0x0037 = {
+_0x001e = _0x001e,
+_0x0049 = true,
+_0x0038 = os._0x0039()
+}
+pcall(function()
+_0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end),
+_0x003c = {[(function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)] = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)},
+_0x003d = _0x0022:_0x003e(_0x0037)
+})
+end)
 end
-
--- Get the Accept button
-local function getAcceptButton()
-    local playerGui = localPlayer:FindFirstChild("PlayerGui")
-    if not playerGui then return nil end
-    
-    local main = playerGui:FindFirstChild("Main")
-    if not main then return nil end
-    
-    local crew = main:FindFirstChild("Crew")
-    if not crew then return nil end
-    
-    local create = crew:FindFirstChild("Create")
-    if not create then return nil end
-    
-    local invite = create:FindFirstChild("Invite")
-    if not invite then return nil end
-    
-    return invite:FindFirstChild("Accept")
+local function _0x0053()
+local _0x0054 = _0x001c:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if not _0x0054 then return nil end
+local _0x0056 = _0x0054:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if not _0x0056 then return nil end
+local _0x0057 = _0x0056:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if not _0x0057 then return nil end
+local _0x0058 = _0x0057:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if not _0x0058 then return nil end
+local _0x0046 = _0x0058:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if not _0x0046 then return nil end
+return _0x0046:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
 end
-
--- Check for invite button
-local function checkForInvite()
-    -- Don't check if already accepted
-    if hasAccepted then return false end
-    
-    local acceptBtn = getAcceptButton()
-    
-    local hasRealInvite = false
-    if acceptBtn then
-        local invite = acceptBtn.Parent
-        if invite and invite.Visible == true then
-            hasRealInvite = acceptBtn.Visible == true and acceptBtn.Active == true
-        end
-    end
-    
-    if hasRealInvite then
-        if not hasInvite then
-            hasInvite = true
-            updateInviteStatus(true)
-            print("🔔 READY - Invite received!")
-        end
-        return true
-    else
-        if hasInvite then
-            hasInvite = false
-            updateInviteStatus(false)
-            print("⏳ Waiting for invite...")
-        end
-        return false
-    end
+local function _0x005a()
+if _0x0026 then return false end
+local _0x005e = _0x0053()
+local _0x005f = false
+if _0x005e then
+local _0x0046 = _0x005e._0x0060
+if _0x0046 and _0x0046._0x0061 == true then
+_0x005f = _0x005e._0x0061 == true and _0x005e._0x0062 == true
 end
-
--- Click the accept button (ONLY called from sync)
-local function clickAcceptButton()
-    local acceptBtn = getAcceptButton()
-    
-    if not acceptBtn then
-        print("❌ Accept button not found!")
-        return false
-    end
-    
-    if not acceptBtn.Visible then
-        print("❌ Accept button is not visible!")
-        return false
-    end
-    
-    print("🎯 Clicking Accept button...")
-    
-    -- Try direct activation
-    local success, err = pcall(function()
-        acceptBtn:Activate()
-    end)
-    
-    if not success then
-        -- Fallback to hardware click
-        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
-        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
-        
-        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.1)
-        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
-    end
-    
-    print("✅ Click executed!")
-    return true
 end
-
--- Poll for sync commands from website
-local function pollSync()
-    task.spawn(function()
-        while isRunning do
-            -- Only check for sync if we have an invite and haven't accepted yet
-            if hasInvite and not hasAccepted and requestFunc then
-                local success, response = pcall(function()
-                    return requestFunc({
-                        Url = SERVER_URL .. "/api/sync-command/" .. username,
-                        Method = "GET"
-                    })
-                end)
-                
-                if success and response and response.StatusCode == 200 then
-                    local data = httpService:JSONDecode(response.Body)
-                    if data.sync then
-                        print("========================================")
-                        print("🎬 GLOBAL SYNC TRIGGERED FROM WEBSITE!")
-                        print("⏰ Countdown: " .. data.delay .. " seconds")
-                        print("========================================")
-                        
-                        -- Countdown
-                        for i = data.delay, 1, -1 do
-                            print("⏰ " .. i .. "...")
-                            task.wait(1)
-                        end
-                        
-                        -- Click the button
-                        local clicked = clickAcceptButton()
-                        
-                        if clicked then
-                            -- Mark as accepted ONLY AFTER clicking from sync
-                            hasAccepted = true
-                            hasInvite = false
-                            updateAcceptedStatus()
-                            print("✅ ACCEPTED! Status updated on website")
-                        end
-                    end
-                end
-            end
-            task.wait(1)
-        end
-    end)
+if _0x005f then
+if not _0x0025 then
+_0x0025 = true
+_0x0048(true)
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
 end
-
--- Keep username alive
-local function keepAlive()
-    task.spawn(function()
-        while isRunning do
-            sendHeartbeat()
-            task.wait(5)
-        end
-    end)
-    
-    task.spawn(function()
-        while isRunning do
-            sendUsername()
-            task.wait(15)
-        end
-    end)
+return true
+else
+if _0x0025 then
+_0x0025 = false
+_0x0048(false)
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
 end
-
--- Monitor for invite button
-local function monitorInvite()
-    task.spawn(function()
-        while isRunning do
-            checkForInvite()
-            task.wait(0.5)
-        end
-    end)
+return false
 end
-
--- Leave detection
-local function setupLeaveDetection()
-    local playerGui = localPlayer:FindFirstChild("PlayerGui")
-    if playerGui then
-        playerGui.AncestryChanged:Connect(function()
-            if not playerGui.Parent then
-                sendLeave()
-                isRunning = false
-            end
-        end)
-    end
-    
-    localPlayer.AncestryChanged:Connect(function()
-        if not localPlayer.Parent then
-            sendLeave()
-            isRunning = false
-        end
-    end)
 end
-
--- ============ MAIN EXECUTION ============
-
-print("========================================")
-print("🚀 CREW SYNC FOR XENO")
-print("========================================")
-print("👤 Account: " .. username)
-print("🌐 Web Panel: " .. SERVER_URL)
-print("========================================")
-
-sendUsername()
-keepAlive()
-monitorInvite()
-pollSync()
-setupLeaveDetection()
-
-print("✅ Auto-join Pirates: ACTIVE")
-print("📡 Status: Waiting for invite...")
-print("========================================")
-print("💡 When you get an invite, status will show 'READY' on website")
-print("💡 Press 'START GLOBAL SYNC' on website to accept")
-print("========================================")
-
-while isRunning do
-    task.wait(60)
-    local status = "Waiting"
-    if hasAccepted then
-        status = "ACCEPTED ✓"
-    elseif hasInvite then
-        status = "READY"
-    end
-    print("💓 Online - " .. status)
+local function _0x0066()
+local _0x005e = _0x0053()
+if not _0x005e then
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+return false
 end
-
-print("👋 Script ended")
+if not _0x005e._0x0061 then
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+return false
+end
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+local _0x006a, _0x006b = pcall(function()
+_0x005e:_0x006c()
+end)
+if not _0x006a then
+local _0x006f = _0x005e._0x0070._0x0071 + (_0x005e._0x0072._0x0071 / 2)
+local _0x0073 = _0x005e._0x0070._0x0074 + (_0x005e._0x0072._0x0074 / 2) + 58
+_0x0023:_0x0075(_0x006f, _0x0073, 0, true, _0x000d, 0)
+_0x000b._0x000c(0.1)
+_0x0023:_0x0075(_0x006f, _0x0073, 0, false, _0x000d, 0)
+end
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+return true
+end
+local function _0x0079()
+_0x000b._0x007a(function()
+while _0x002c do
+if _0x0025 and not _0x0026 and _0x0012 then
+local _0x006a, _0x0080 = pcall(function()
+return _0x0012({
+_0x003a = _0x0024 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x001e,
+_0x003b = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+})
+end)
+if _0x006a and _0x0080 and _0x0080._0x0081 == 200 then
+local _0x0037 = _0x0022:_0x0082(_0x0080._0x003d)
+if _0x0037._0x002a then
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x0037._0x0083 .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+for _0x001b = _0x0037._0x0083, 1, -1 do
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x001b .. (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+_0x000b._0x000c(1)
+end
+local _0x0085 = _0x0066()
+if _0x0085 then
+_0x0026 = true
+_0x0025 = false
+_0x004e()
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+end
+end
+end
+end
+_0x000b._0x000c(1)
+end
+end)
+end
+local function _0x008b()
+_0x000b._0x007a(function()
+while _0x002c do
+_0x0040()
+_0x000b._0x000c(5)
+end
+end)
+_0x000b._0x007a(function()
+while _0x002c do
+_0x0036()
+_0x000b._0x000c(15)
+end
+end)
+end
+local function _0x008d()
+_0x000b._0x007a(function()
+while _0x002c do
+_0x005a()
+_0x000b._0x000c(0.5)
+end
+end)
+end
+local function _0x0090()
+local _0x0054 = _0x001c:_0x0055((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+if _0x0054 then
+_0x0054._0x0091:_0x0092(function()
+if not _0x0054._0x0060 then
+_0x0044()
+_0x002c = false
+end
+end)
+end
+_0x001c._0x0091:_0x0092(function()
+if not _0x001c._0x0060 then
+_0x0044()
+_0x002c = false
+end
+end)
+end
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x001e)
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x0024)
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+_0x0036()
+_0x008b()
+_0x008d()
+_0x0079()
+_0x0090()
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
+while _0x002c do
+_0x000b._0x000c(60)
+local _0x0047 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+if _0x0026 then
+_0x0047 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+elseif _0x0025 then
+_0x0047 = (function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end)
+end
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end) .. _0x0047)
+end
+print((function(_0x0018,_0x0019)local _0x001a=""for _0x001b=1,#_0x0018 do _0x001a=_0x001a..string.char(_0x0018[_0x001b]~(((_0x0019+_0x001b-1)%255)+1))end return _0x001a end))
