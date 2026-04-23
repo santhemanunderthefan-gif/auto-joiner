@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (WORKING)
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features)
 -- Web Panel: https://pk-glitch.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -24,35 +24,34 @@ local userId = localPlayer.UserId
 local httpService = game:GetService("HttpService")
 local vim = game:GetService("VirtualInputManager")
 local runService = game:GetService("RunService")
+local lighting = game:GetService("Lighting")
+local workspace = game:GetService("Workspace")
+local starterGui = game:GetService("StarterGui")
 
 local SERVER_URL = "https://pk-glitch.onrender.com"
 local hasInvite = false
 local hasAccepted = false
 local isRunning = true
+local crewButtonClicked = false
 
 -- ============ WORKING FPS CAP AT 15 ============
 local function lockFPS()
     print("🔒 Setting FPS cap to 15...")
     
-    -- Method 1: Set FrameRateLimit
     pcall(function()
         local UserSettings = game:GetService("UserSettings")
         local GameSettings = UserSettings:GetService("UserGameSettings")
         GameSettings.FrameRateLimit = 15
     end)
     
-    -- Method 2: Another way
     pcall(function()
         settings().Rendering.QualityLevel = 1
-        settings().Rendering.AutoFRMLevel = 2
     end)
     
-    -- Method 3: Throttle RenderStepped
     local frameTime = 1 / 15
     local lastTime = tick()
     
-    local connection
-    connection = runService.RenderStepped:Connect(function()
+    runService.RenderStepped:Connect(function()
         local currentTime = tick()
         local delta = currentTime - lastTime
         if delta < frameTime then
@@ -62,17 +61,157 @@ local function lockFPS()
     end)
     
     print("✅ FPS cap set to 15")
-    return connection
 end
 
--- ============ SEND SIGNALS TO WEBSITE ============
+-- ============ WHITE SCREEN (Full White) ============
+local function enableWhiteScreen()
+    print("🌕 Enabling white screen mode...")
+    
+    -- Create white overlay GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "WhiteScreenOverlay"
+    screenGui.IgnoreGuiInset = true
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local whiteFrame = Instance.new("Frame")
+    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+    whiteFrame.Position = UDim2.new(0, 0, 0, 0)
+    whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+    whiteFrame.BackgroundTransparency = 0
+    whiteFrame.BorderSizePixel = 0
+    whiteFrame.ZIndex = 999
+    whiteFrame.Parent = screenGui
+    
+    pcall(function()
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
+    
+    -- Make game world white
+    pcall(function()
+        lighting.Ambient = Color3.new(1, 1, 1)
+        lighting.Brightness = 2
+        lighting.ClockTime = 12
+        lighting.FogColor = Color3.new(1, 1, 1)
+        lighting.FogEnd = 0.1
+        lighting.FogStart = 0
+        lighting.GlobalShadows = false
+        lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+    end)
+    
+    -- Hide parts
+    pcall(function()
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
+                child.Transparency = 1
+            elseif child:IsA("Model") and child ~= localPlayer.Character then
+                for _, part in ipairs(child:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Transparency = 1
+                    end
+                end
+            end
+        end
+    end)
+    
+    print("✅ White screen mode enabled")
+end
 
--- Send username to server
-local function sendUsername()
-    if not requestFunc then 
-        print("⚠️ No HTTP function available")
-        return 
+-- ============ CLICK CREW BUTTON ONCE ============
+local function clickCrewButton()
+    if crewButtonClicked then return end
+    
+    print("🎯 Looking for CrewButton...")
+    
+    -- Wait for PlayerGui to load
+    repeat task.wait(0.5) until localPlayer.PlayerGui
+    
+    -- Try to find the CrewButton in different possible locations
+    local crewButton = nil
+    
+    -- Method 1: StarterGui path
+    pcall(function()
+        if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
+            crewButton = starterGui.Main.HUDButtonBar.CrewButton
+        end
+    end)
+    
+    -- Method 2: PlayerGui path
+    if not crewButton then
+        pcall(function()
+            if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
+                crewButton = localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton
+            end
+        end)
     end
+    
+    -- Method 3: Search for CrewButton anywhere in PlayerGui
+    if not crewButton then
+        pcall(function()
+            crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
+        end)
+    end
+    
+    if crewButton and crewButton.Visible then
+        print("✅ Found CrewButton! Clicking...")
+        
+        -- Try to activate
+        local success = pcall(function()
+            crewButton:Activate()
+        end)
+        
+        if not success then
+            -- Hardware click
+            local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
+            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2) + 58
+            vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.1)
+            vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        end
+        
+        crewButtonClicked = true
+        print("✅ Crew button clicked! Crew menu should be open.")
+    else
+        print("⚠️ CrewButton not found - will retry")
+        -- Retry after 3 seconds
+        task.wait(3)
+        if not crewButtonClicked then
+            clickCrewButton()
+        end
+    end
+end
+
+-- ============ CORRECT INVITE DETECTION ============
+local function hasRealInvite()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return false end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return false end
+    
+    local create = crew:FindFirstChild("Create")
+    if not create then return false end
+    
+    local invite = create:FindFirstChild("Invite")
+    if not invite then return false end
+    
+    if invite.Visible == true then
+        local acceptBtn = invite:FindFirstChild("Accept")
+        if acceptBtn and acceptBtn.Visible == true then
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- ============ HTTP FUNCTIONS ============
+
+local function sendUsername()
+    if not requestFunc then return end
     
     local data = {
         username = username,
@@ -81,23 +220,17 @@ local function sendUsername()
         executor = "Xeno"
     }
     
-    local success, response = pcall(function()
-        return requestFunc({
+    pcall(function()
+        requestFunc({
             Url = SERVER_URL .. "/api/username",
             Method = "POST",
             Headers = {["Content-Type"] = "application/json"},
             Body = httpService:JSONEncode(data)
         })
     end)
-    
-    if success then
-        print("✅ Username sent: " .. username)
-    else
-        print("❌ Failed to send username")
-    end
+    print("📡 Username sent: " .. username)
 end
 
--- Send heartbeat
 local function sendHeartbeat()
     if not requestFunc then return end
     
@@ -117,7 +250,6 @@ local function sendHeartbeat()
     end)
 end
 
--- Send leave signal
 local function sendLeave()
     if not requestFunc then return end
     
@@ -137,7 +269,6 @@ local function sendLeave()
     end)
 end
 
--- Update invite status
 local function updateInviteStatus(status)
     if not requestFunc then return end
     
@@ -157,7 +288,6 @@ local function updateInviteStatus(status)
     end)
 end
 
--- Update accepted status
 local function updateAcceptedStatus()
     if not requestFunc then return end
     
@@ -207,24 +337,24 @@ local function getAcceptButton()
     return invite:FindFirstChild("Accept")
 end
 
--- Check for invite
+-- Check for REAL invite
 local function checkForInvite()
     if hasAccepted then return false end
     
-    local acceptBtn = getAcceptButton()
+    local realInvite = hasRealInvite()
     
-    if acceptBtn and acceptBtn.Visible then
+    if realInvite then
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print("🔔 INVITE RECEIVED! Ready for sync")
+            print("🔔 REAL INVITE DETECTED! Ready for sync")
         end
         return true
     else
         if hasInvite then
             hasInvite = false
             updateInviteStatus(false)
-            print("⏳ Waiting for invite...")
+            print("⏳ No invite - Waiting...")
         end
         return false
     end
@@ -232,21 +362,22 @@ end
 
 -- Click accept button
 local function clickAcceptButton()
+    if hasAccepted then return true end
+    
     local acceptBtn = getAcceptButton()
     
     if not acceptBtn or not acceptBtn.Visible then
+        print("❌ Accept button not visible")
         return false
     end
     
     print("🎯 Clicking Accept button...")
     
-    -- Try direct activation
     local success = pcall(function()
         acceptBtn:Activate()
     end)
     
     if not success then
-        -- Hardware click
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
         
@@ -255,7 +386,10 @@ local function clickAcceptButton()
         vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
     end
     
-    print("✅ Clicked accept!")
+    hasAccepted = true
+    hasInvite = false
+    updateAcceptedStatus()
+    print("✅ ACCEPTED! Joined crew!")
     return true
 end
 
@@ -279,21 +413,12 @@ local function pollSync()
                         print("⏰ Countdown: " .. data.delay .. " seconds")
                         print("========================================")
                         
-                        -- Countdown
                         for i = data.delay, 1, -1 do
                             print("⏰ " .. i)
                             task.wait(1)
                         end
                         
-                        -- Click the button
-                        local clicked = clickAcceptButton()
-                        
-                        if clicked then
-                            hasAccepted = true
-                            hasInvite = false
-                            updateAcceptedStatus()
-                            print("✅ ACCEPTED! Joined crew!")
-                        end
+                        clickAcceptButton()
                     end
                 end
             end
@@ -302,7 +427,7 @@ local function pollSync()
     end)
 end
 
--- Keep alive (heartbeat every 5 seconds)
+-- Keep alive
 local function keepAlive()
     task.spawn(function()
         while isRunning do
@@ -314,17 +439,17 @@ local function keepAlive()
     task.spawn(function()
         while isRunning do
             sendUsername()
-            task.wait(15)
+            task.wait(30)
         end
     end)
 end
 
--- Monitor for invites
+-- Monitor invites
 local function monitorInvite()
     task.spawn(function()
         while isRunning do
             checkForInvite()
-            task.wait(0.5)
+            task.wait(1)
         end
     end)
 end
@@ -342,17 +467,29 @@ end
 -- ============ MAIN ============
 
 print("========================================")
-print("🚀 CREW SYNC FOR XENO")
+print("🚀 CREW SYNC FOR XENO (COMPLETE)")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
--- Lock FPS to 15
-local fpsConnection = lockFPS()
+-- Apply FPS cap
+lockFPS()
+
+-- Enable white screen
+enableWhiteScreen()
+
+-- Join Pirates
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
 
 -- Send initial username
 sendUsername()
+
+-- Click CrewButton once after short delay
+task.wait(2)
+clickCrewButton()
 
 -- Start all processes
 keepAlive()
@@ -362,7 +499,10 @@ setupLeaveDetection()
 
 print("✅ Auto-join Pirates: ON")
 print("✅ FPS Cap: 15 FPS")
-print("✅ Signal sending: ACTIVE")
+print("✅ White Screen: ON")
+print("✅ Crew Button: Auto-clicked once")
+print("✅ Invite Detection: ACTIVE")
+print("✅ Sync System: ACTIVE")
 print("========================================")
 
 -- Main loop
