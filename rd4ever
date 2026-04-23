@@ -1,210 +1,422 @@
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🏴‍☠️ CREW SYNC - WebSocket Only Version
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-- CREW SYNC FOR XENO
+-- Web Panel: https://pk-glitch.onrender.com
+
+repeat task.wait() until game:IsLoaded()
+
+-- Detect executor request function
+local requestFunc = nil
+if Xeno and Xeno.HttpRequest then
+    requestFunc = Xeno.HttpRequest
+elseif Xeno and Xeno.request then
+    requestFunc = Xeno.request
+elseif syn and syn.request then
+    requestFunc = syn.request
+elseif request then
+    requestFunc = request
+end
 
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInput = game:GetService("VirtualInputManager")
-local WebSocket = game:GetService("WebSocket")
+local localPlayer = Players.LocalPlayer
+local username = localPlayer.Name
+local userId = localPlayer.UserId
+local httpService = game:GetService("HttpService")
+local vim = game:GetService("VirtualInputManager")
 
-local player = Players.LocalPlayer
-local WS_URL = "wss://rd4ever.onrender.com/socket.io/?EIO=4&transport=websocket"
+local SERVER_URL = "https://pk-glitch.onrender.com"
+local hasInvite = false
+local acceptedInvite = false
+local isRunning = true
+local crewJoined = false
 
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🏴‍☠️ CREW SYNC - WebSocket Only")
-print("👤 Account:", player.Name)
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+-- Join Pirates
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
 
-local socket = nil
-local syncReceived = false
-local syncDelay = 5
-
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🔌 CONNECT WEBSOCKET
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function connectWebSocket()
-    local success, ws = pcall(function()
-        return WebSocket.connect(WS_URL)
-    end)
+-- Send username to server
+local function sendUsername()
+    if not requestFunc then return end
     
-    if success and ws then
-        socket = ws
-        print("✅ WebSocket connected!")
-        
-        -- Send registration to server
-        task.wait(1)
-        local registerMsg = '42["register_client",{"username":"' .. player.Name .. '"}]'
-        pcall(function() socket:Send(registerMsg) end)
-        print("📡 Registered:", player.Name)
-        
-        -- Listen for sync command
-        socket.OnMessage:Connect(function(message)
-            print("📩 Received:", message)
-            
-            if message and message:find('"execute_sync"') then
-                local delayMatch = message:match('"delay":(%d+)')
-                if delayMatch then
-                    syncDelay = tonumber(delayMatch)
-                end
-                syncReceived = true
-                print("🔥 SYNC COMMAND! Delay:", syncDelay)
-            end
-        end)
-        
+    local data = {
+        username = username,
+        userId = userId,
+        timestamp = os.time(),
+        executor = "Xeno"
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/username",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- Send heartbeat to stay alive
+local function sendHeartbeat()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        action = "heartbeat",
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/heartbeat",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- Send leave signal
+local function sendLeave()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        action = "leave",
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/leave",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- Update invite status
+local function updateInviteStatus(status)
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        hasInvite = status,
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/update-invite",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- Update accepted status (only called when actually joined crew)
+local function updateAcceptedStatus()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        accepted = true,
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/update-accepted",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- Get the Accept button using the exact path
+local function getAcceptButton()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return nil end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return nil end
+    
+    local create = crew:FindFirstChild("Create")
+    if not create then return nil end
+    
+    local invite = create:FindFirstChild("Invite")
+    if not invite then return nil end
+    
+    return invite:FindFirstChild("Accept")
+end
+
+-- Check if player actually joined the crew
+local function checkIfJoinedCrew()
+    -- Check crew UI to see if we're in a crew now
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return false end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return false end
+    
+    -- If we're in a crew, the Create frame might be gone or different
+    local create = crew:FindFirstChild("Create")
+    if not create then 
+        -- Create frame missing means we might be in a crew already
         return true
     end
     
-    print("❌ WebSocket failed:", ws)
+    -- Check if invite frame is gone (means we accepted)
+    local invite = create:FindFirstChild("Invite")
+    if invite and invite.Visible == false then
+        return true
+    end
+    
     return false
 end
 
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🏴‍☠️ JOIN PIRATES
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function joinPirates()
-    print("🏴‍☠️ Joining Pirates...")
+-- Check for invite button
+local function checkForInvite()
+    local acceptBtn = getAcceptButton()
     
-    repeat task.wait() until game:IsLoaded()
+    local hasRealInvite = false
+    if acceptBtn then
+        local invite = acceptBtn.Parent
+        if invite and invite.Visible == true then
+            hasRealInvite = acceptBtn.Visible == true and acceptBtn.Active == true
+        end
+    end
+    
+    if hasRealInvite then
+        if not hasInvite then
+            hasInvite = true
+            updateInviteStatus(true)
+            print("🔔 READY - Invite received!")
+        end
+        return true
+    else
+        if hasInvite then
+            hasInvite = false
+            updateInviteStatus(false)
+            print("⏳ Waiting for invite...")
+        end
+        return false
+    end
+end
+
+-- Execute click using MULTIPLE METHODS to ensure it works
+local function executeClick()
+    if crewJoined then 
+        print("✅ Already joined crew")
+        return true
+    end
+    
+    local acceptBtn = getAcceptButton()
+    
+    if not acceptBtn then
+        print("❌ Accept button not found!")
+        return false
+    end
+    
+    if not acceptBtn.Visible then
+        print("❌ Accept button is not visible!")
+        return false
+    end
+    
+    -- Method 1: Fire the button directly (if possible)
+    local success, err = pcall(function()
+        acceptBtn:Activate()
+    end)
+    
+    if success then
+        print("✅ Method 1: Button activated directly")
+        task.wait(0.5)
+    else
+        print("⚠️ Method 1 failed, trying hardware click...")
+        
+        -- Method 2: Hardware mouse click
+        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+        
+        print("🎯 Clicking at position: " .. x .. ", " .. y)
+        
+        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.1)
+        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end
+    
+    -- Wait a moment for the join to process
+    print("⏳ Waiting for crew join to process...")
     task.wait(2)
     
-    pcall(function()
-        local Remotes = ReplicatedStorage:FindFirstChild("Remotes")
-        if Remotes then
-            local CommF = Remotes:FindFirstChild("CommF_")
-            if CommF then
-                CommF:InvokeServer("SetTeam", "Pirates")
-                print("✅ Joined Pirates!")
-            end
-        end
-    end)
-end
-
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🔍 FIND INVITE BUTTON
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function findInviteButton()
-    if not player or not player.PlayerGui then return nil end
-    
-    local paths = {
-        "Main.Crew.Create.Invite.Accept",
-        "Main.Crew.Invite.Accept",
-        "Crew.Invite.Accept",
-        "Main.Dialog.Confirm"
-    }
-    
-    for _, path in ipairs(paths) do
-        local success, btn = pcall(function()
-            local current = player.PlayerGui
-            for part in string.gmatch(path, "[^%.]+") do
-                current = current:FindFirstChild(part)
-                if not current then break end
-            end
-            return current
-        end)
-        
-        if success and btn and btn:IsA("TextButton") and btn.Visible then
-            return btn
-        end
-    end
-    
-    return nil
-end
-
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🖱️ CLICK BUTTON
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function clickButton(btn)
-    if not btn then return false end
-    
-    return pcall(function()
-        local x = btn.AbsolutePosition.X + btn.AbsoluteSize.X / 2
-        local y = btn.AbsolutePosition.Y + btn.AbsoluteSize.Y / 2 + 58
-        
-        VirtualInput:SendMouseMoveEvent(x, y, 0, game)
-        task.wait(0.05)
-        VirtualInput:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.1)
-        VirtualInput:SendMouseButtonEvent(x, y, 0, false, game, 0)
-        
-        print("✅ Clicked invite!")
-    end)
-end
-
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- ⏳ WAIT FOR SYNC
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function waitForSync()
-    print("⏳ Waiting for sync command...")
-    
-    while not syncReceived do
-        task.wait(0.1)
-    end
-    
-    print("🔥 SYNC STARTING in", syncDelay, "seconds!")
-    
-    for i = syncDelay, 1, -1 do
-        print("⏱️ Joining in", i, "...")
+    -- Verify we actually joined the crew
+    for i = 1, 5 do
         task.wait(1)
-    end
-end
-
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🔍 MONITOR FOR INVITES
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function monitorInvites()
-    while true do
-        local btn = findInviteButton()
-        
-        if btn then
-            print("📩 INVITE DETECTED!")
-            
-            -- Wait for sync command
-            waitForSync()
-            
-            -- Click the button
-            if clickButton(btn) then
-                print("✅ Successfully joined crew!")
-            else
-                print("❌ Failed to click invite")
-            end
-            
-            break
+        if checkIfJoinedCrew() then
+            crewJoined = true
+            acceptedInvite = true
+            updateAcceptedStatus()
+            print("✅ Successfully joined the crew!")
+            return true
         end
-        
-        task.wait(2)
+        print("⏳ Verifying crew join... (" .. i .. "/5)")
+    end
+    
+    if crewJoined then
+        return true
+    else
+        print("⚠️ Click executed but crew join not verified yet")
+        -- Don't mark as accepted until verified
+        return false
     end
 end
 
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--- 🚀 MAIN
---━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-local function main()
-    repeat task.wait()
-        player = Players.LocalPlayer
-    until player and player.Name ~= ""
-    
-    print("🚀 Starting Crew Sync for", player.Name)
-    
-    -- Connect WebSocket
-    if not connectWebSocket() then
-        print("❌ Cannot connect to server. Check if Render is running.")
-        return
-    end
-    
-    -- Join Pirates
-    joinPirates()
-    
-    -- Monitor for invites
-    monitorInvites()
+-- Poll for sync commands
+local function pollSync()
+    task.spawn(function()
+        while isRunning do
+            if hasInvite and not crewJoined and requestFunc then
+                local success, response = pcall(function()
+                    return requestFunc({
+                        Url = SERVER_URL .. "/api/sync-command/" .. username,
+                        Method = "GET"
+                    })
+                end)
+                
+                if success and response and response.StatusCode == 200 then
+                    local data = httpService:JSONDecode(response.Body)
+                    if data.sync then
+                        print("========================================")
+                        print("🎬 GLOBAL SYNC TRIGGERED!")
+                        print("⏰ Countdown: " .. data.delay .. " seconds")
+                        print("========================================")
+                        
+                        -- Countdown
+                        for i = data.delay, 1, -1 do
+                            print("⏰ " .. i .. "...")
+                            task.wait(1)
+                        end
+                        
+                        print("🎯 EXECUTING CLICK NOW!")
+                        local clicked = executeClick()
+                        
+                        if clicked then
+                            print("✅ Sync complete! Joined crew!")
+                        else
+                            print("⚠️ Sync executed but waiting for crew verification")
+                        end
+                    end
+                end
+            end
+            task.wait(1)
+        end
+    end)
 end
 
--- Start
-local success, err = pcall(main)
-if not success then
-    print("❌ Error:", err)
+-- Keep username alive with heartbeat
+local function keepAlive()
+    task.spawn(function()
+        while isRunning do
+            sendHeartbeat()
+            task.wait(5)
+        end
+    end)
+    
+    task.spawn(function()
+        while isRunning do
+            sendUsername()
+            task.wait(15)
+        end
+    end)
 end
+
+-- Monitor for invite button
+local function monitorInvite()
+    task.spawn(function()
+        while isRunning do
+            checkForInvite()
+            task.wait(0.5)
+        end
+    end)
+end
+
+-- Monitor if crew was joined (for manual accepts)
+local function monitorCrewJoin()
+    task.spawn(function()
+        while isRunning do
+            if not crewJoined and checkIfJoinedCrew() then
+                crewJoined = true
+                acceptedInvite = true
+                updateAcceptedStatus()
+                print("✅ Detected crew join!")
+            end
+            task.wait(1)
+        end
+    end)
+end
+
+-- Leave detection
+local function setupLeaveDetection()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if playerGui then
+        playerGui.AncestryChanged:Connect(function()
+            if not playerGui.Parent then
+                sendLeave()
+                isRunning = false
+            end
+        end)
+    end
+    
+    localPlayer.AncestryChanged:Connect(function()
+        if not localPlayer.Parent then
+            sendLeave()
+            isRunning = false
+        end
+    end)
+end
+
+-- ============ MAIN EXECUTION ============
+
+print("========================================")
+print("🚀 CREW SYNC FOR XENO")
+print("========================================")
+print("👤 Account: " .. username)
+print("🌐 Web Panel: " .. SERVER_URL)
+print("========================================")
+
+-- Send username immediately
+sendUsername()
+
+-- Start all monitoring
+keepAlive()
+monitorInvite()
+pollSync()
+monitorCrewJoin()
+setupLeaveDetection()
+
+print("✅ Auto-join Pirates: ACTIVE")
+print("📡 Status: Waiting for invite...")
+print("========================================")
 
 -- Keep alive
-while true do
+while isRunning do
     task.wait(60)
+    local status = "Waiting"
+    if crewJoined then
+        status = "CREW JOINED ✓"
+    elseif hasInvite then
+        status = "READY"
+    end
+    print("💓 Online - " .. status)
 end
+
+print("👋 Script ended")
