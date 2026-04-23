@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (Mobile-Friendly Click)
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features)
 -- Web Panel: https://pk-glitch.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -34,11 +34,6 @@ local hasAccepted = false
 local isRunning = true
 local crewButtonClicked = false
 
--- Detect if on mobile
-local function isMobile()
-    return game:GetService("UserInputService").TouchEnabled
-end
-
 -- ============ WORKING FPS CAP AT 15 ============
 local function lockFPS()
     print("🔒 Setting FPS cap to 15...")
@@ -72,6 +67,7 @@ end
 local function enableWhiteScreen()
     print("🌕 Enabling white screen mode...")
     
+    -- Create white overlay GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "WhiteScreenOverlay"
     screenGui.IgnoreGuiInset = true
@@ -91,6 +87,7 @@ local function enableWhiteScreen()
         screenGui.Parent = game:GetService("CoreGui")
     end)
     
+    -- Make game world white
     pcall(function()
         lighting.Ambient = Color3.new(1, 1, 1)
         lighting.Brightness = 2
@@ -102,6 +99,7 @@ local function enableWhiteScreen()
         lighting.OutdoorAmbient = Color3.new(1, 1, 1)
     end)
     
+    -- Hide parts
     pcall(function()
         for _, child in ipairs(workspace:GetChildren()) do
             if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
@@ -125,16 +123,20 @@ local function clickCrewButton()
     
     print("🎯 Looking for CrewButton...")
     
+    -- Wait for PlayerGui to load
     repeat task.wait(0.5) until localPlayer.PlayerGui
     
+    -- Try to find the CrewButton in different possible locations
     local crewButton = nil
     
+    -- Method 1: StarterGui path
     pcall(function()
         if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
             crewButton = starterGui.Main.HUDButtonBar.CrewButton
         end
     end)
     
+    -- Method 2: PlayerGui path
     if not crewButton then
         pcall(function()
             if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
@@ -143,6 +145,7 @@ local function clickCrewButton()
         end)
     end
     
+    -- Method 3: Search for CrewButton anywhere in PlayerGui
     if not crewButton then
         pcall(function()
             crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
@@ -152,30 +155,25 @@ local function clickCrewButton()
     if crewButton and crewButton.Visible then
         print("✅ Found CrewButton! Clicking...")
         
+        -- Try to activate
         local success = pcall(function()
             crewButton:Activate()
         end)
         
         if not success then
+            -- Hardware click
             local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
-            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2)
-            
-            -- Different offset for mobile vs PC
-            if isMobile() then
-                y = y + 30 -- Mobile offset (smaller top bar)
-            else
-                y = y + 58 -- PC offset
-            end
-            
+            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2) + 58
             vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
             task.wait(0.1)
             vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
         end
         
         crewButtonClicked = true
-        print("✅ Crew button clicked!")
+        print("✅ Crew button clicked! Crew menu should be open.")
     else
-        print("⚠️ CrewButton not found - retrying")
+        print("⚠️ CrewButton not found - will retry")
+        -- Retry after 3 seconds
         task.wait(3)
         if not crewButtonClicked then
             clickCrewButton()
@@ -183,91 +181,7 @@ local function clickCrewButton()
     end
 end
 
--- ============ FIXED CLICK FOR MOBILE ============
-local function clickAcceptButton()
-    if hasAccepted then return true end
-    
-    local acceptBtn = getAcceptButton()
-    
-    if not acceptBtn or not acceptBtn.Visible then
-        print("❌ Accept button not visible")
-        return false
-    end
-    
-    print("🎯 Clicking Accept button...")
-    
-    -- Try direct activation first
-    local success = pcall(function()
-        acceptBtn:Activate()
-    end)
-    
-    if success then
-        print("✅ Direct activation worked!")
-        hasAccepted = true
-        hasInvite = false
-        updateAcceptedStatus()
-        return true
-    end
-    
-    -- Calculate click position
-    local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
-    local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2)
-    
-    -- Adjust offset based on device
-    if isMobile() then
-        -- On mobile, the top bar is smaller or non-existent
-        -- Try clicking at exact center first
-        print("📱 Mobile mode - clicking at center")
-        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.1)
-        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
-        task.wait(0.5)
-        
-        -- Check if accepted, if not try with offset
-        if not hasAccepted then
-            print("📱 Trying with mobile offset...")
-            local y2 = y + 40
-            vim:SendMouseButtonEvent(x, y2, 0, true, game, 0)
-            task.wait(0.1)
-            vim:SendMouseButtonEvent(x, y2, 0, false, game, 0)
-        end
-    else
-        -- PC mode
-        local yOffset = y + 58
-        print("💻 PC mode - clicking at: " .. x .. ", " .. yOffset)
-        vim:SendMouseButtonEvent(x, yOffset, 0, true, game, 0)
-        task.wait(0.1)
-        vim:SendMouseButtonEvent(x, yOffset, 0, false, game, 0)
-    end
-    
-    task.wait(1)
-    
-    -- Double check if we need to try again
-    local checkAgain = getAcceptButton()
-    if checkAgain and checkAgain.Visible then
-        print("🔄 Click didn't register, trying again...")
-        local x2 = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
-        local y2 = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2)
-        
-        if isMobile() then
-            vim:SendMouseButtonEvent(x2, y2 + 35, 0, true, game, 0)
-            task.wait(0.1)
-            vim:SendMouseButtonEvent(x2, y2 + 35, 0, false, game, 0)
-        else
-            vim:SendMouseButtonEvent(x2, y2 + 55, 0, true, game, 0)
-            task.wait(0.1)
-            vim:SendMouseButtonEvent(x2, y2 + 55, 0, false, game, 0)
-        end
-    end
-    
-    hasAccepted = true
-    hasInvite = false
-    updateAcceptedStatus()
-    print("✅ ACCEPTED! Joined crew!")
-    return true
-end
-
--- ============ INVITE DETECTION ============
+-- ============ CORRECT INVITE DETECTION ============
 local function hasRealInvite()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return false end
@@ -303,7 +217,7 @@ local function sendUsername()
         username = username,
         userId = userId,
         timestamp = os.time(),
-        executor = isMobile() and "Mobile" or "PC"
+        executor = "Xeno"
     }
     
     pcall(function()
@@ -314,7 +228,7 @@ local function sendUsername()
             Body = httpService:JSONEncode(data)
         })
     end)
-    print("📡 Username sent: " .. username .. " (" .. (isMobile() and "Mobile" or "PC") .. ")")
+    print("📡 Username sent: " .. username)
 end
 
 local function sendHeartbeat()
@@ -395,6 +309,7 @@ end
 
 -- ============ CREW FUNCTIONS ============
 
+-- Join Pirates
 local replicatedStorage = game:GetService("ReplicatedStorage")
 local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
 pcall(function()
@@ -402,6 +317,7 @@ pcall(function()
     print("✅ Joined Pirates team")
 end)
 
+-- Get Accept button
 local function getAcceptButton()
     local playerGui = localPlayer:FindFirstChild("PlayerGui")
     if not playerGui then return nil end
@@ -421,6 +337,7 @@ local function getAcceptButton()
     return invite:FindFirstChild("Accept")
 end
 
+-- Check for REAL invite
 local function checkForInvite()
     if hasAccepted then return false end
     
@@ -430,18 +347,53 @@ local function checkForInvite()
         if not hasInvite then
             hasInvite = true
             updateInviteStatus(true)
-            print("🔔 INVITE DETECTED! Ready for sync")
+            print("🔔 REAL INVITE DETECTED! Ready for sync")
         end
         return true
     else
         if hasInvite then
             hasInvite = false
             updateInviteStatus(false)
+            print("⏳ No invite - Waiting...")
         end
         return false
     end
 end
 
+-- Click accept button
+local function clickAcceptButton()
+    if hasAccepted then return true end
+    
+    local acceptBtn = getAcceptButton()
+    
+    if not acceptBtn or not acceptBtn.Visible then
+        print("❌ Accept button not visible")
+        return false
+    end
+    
+    print("🎯 Clicking Accept button...")
+    
+    local success = pcall(function()
+        acceptBtn:Activate()
+    end)
+    
+    if not success then
+        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+        
+        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.1)
+        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end
+    
+    hasAccepted = true
+    hasInvite = false
+    updateAcceptedStatus()
+    print("✅ ACCEPTED! Joined crew!")
+    return true
+end
+
+-- Poll for sync commands
 local function pollSync()
     task.spawn(function()
         while isRunning do
@@ -475,6 +427,7 @@ local function pollSync()
     end)
 end
 
+-- Keep alive
 local function keepAlive()
     task.spawn(function()
         while isRunning do
@@ -491,6 +444,7 @@ local function keepAlive()
     end)
 end
 
+-- Monitor invites
 local function monitorInvite()
     task.spawn(function()
         while isRunning do
@@ -500,6 +454,7 @@ local function monitorInvite()
     end)
 end
 
+-- Leave detection
 local function setupLeaveDetection()
     localPlayer.AncestryChanged:Connect(function()
         if not localPlayer.Parent then
@@ -512,19 +467,31 @@ end
 -- ============ MAIN ============
 
 print("========================================")
-print("🚀 CREW SYNC FOR XENO")
-print("📱 Mobile Support: " .. tostring(isMobile()))
+print("🚀 CREW SYNC FOR XENO (COMPLETE)")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
+-- Apply FPS cap
 lockFPS()
+
+-- Enable white screen
 enableWhiteScreen()
+
+-- Join Pirates
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
+
+-- Send initial username
 sendUsername()
+
+-- Click CrewButton once after short delay
 task.wait(2)
 clickCrewButton()
 
+-- Start all processes
 keepAlive()
 monitorInvite()
 pollSync()
@@ -533,9 +500,12 @@ setupLeaveDetection()
 print("✅ Auto-join Pirates: ON")
 print("✅ FPS Cap: 15 FPS")
 print("✅ White Screen: ON")
-print("✅ Mobile Mode: " .. tostring(isMobile()))
+print("✅ Crew Button: Auto-clicked once")
+print("✅ Invite Detection: ACTIVE")
+print("✅ Sync System: ACTIVE")
 print("========================================")
 
+-- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
