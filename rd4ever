@@ -73,20 +73,16 @@ local function clickCrewButton()
     
     print("🎯 Looking for CrewButton...")
     
-    -- Wait for PlayerGui to load
     repeat task.wait(0.5) until localPlayer.PlayerGui
     
-    -- Try to find the CrewButton in different possible locations
     local crewButton = nil
     
-    -- Method 1: StarterGui path
     pcall(function()
         if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
             crewButton = starterGui.Main.HUDButtonBar.CrewButton
         end
     end)
     
-    -- Method 2: PlayerGui path
     if not crewButton then
         pcall(function()
             if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
@@ -95,7 +91,6 @@ local function clickCrewButton()
         end)
     end
     
-    -- Method 3: Search for CrewButton anywhere in PlayerGui
     if not crewButton then
         pcall(function()
             crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
@@ -105,17 +100,14 @@ local function clickCrewButton()
     if crewButton and crewButton.Visible then
         print("✅ Found CrewButton! Clicking...")
         
-        -- Try to activate
         local success = pcall(function()
             crewButton:Activate()
         end)
         
         if not success then
-            -- Hardware click
             local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
             local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2)
             
-            -- Adjust offset based on device
             if isMobile() then
                 y = y + 30
             else
@@ -128,10 +120,9 @@ local function clickCrewButton()
         end
         
         crewButtonClicked = true
-        print("✅ Crew button clicked! Crew menu should be open.")
+        print("✅ Crew button clicked!")
     else
         print("⚠️ CrewButton not found - will retry")
-        -- Retry after 3 seconds
         task.wait(3)
         if not crewButtonClicked then
             clickCrewButton()
@@ -318,7 +309,7 @@ local function checkForInvite()
     end
 end
 
--- Click accept button (with 2 pixels left adjustment)
+-- Click accept button (2 pixels to the LEFT, no Y change)
 local function clickAcceptButton()
     if hasAccepted then return true end
     
@@ -344,18 +335,18 @@ local function clickAcceptButton()
         return true
     end
     
-    -- Calculate click position - 2 pixels to the left
-    local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2) - 2
-    local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2)
+    -- Calculate click position - 2 pixels to the LEFT (X - 2, Y unchanged)
+    local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2) - 2  -- 2 pixels LEFT
+    local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2)      -- NO Y change
     
-    -- Adjust offset based on device
+    -- Only add offset for the top bar on PC/mobile (this is necessary for the button to be clickable)
     if isMobile() then
-        y = y + 30
-        print("📱 Mobile mode - clicking at: " .. x .. ", " .. y)
+        y = y + 30  -- Mobile top bar offset
     else
-        y = y + 58
-        print("💻 PC mode - clicking at: " .. x .. ", " .. y)
+        y = y + 58  -- PC top bar offset
     end
+    
+    print("📍 Clicking at: X=" .. x .. ", Y=" .. y .. " (2px LEFT from center)")
     
     -- Send hardware click
     vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
@@ -476,7 +467,7 @@ setupLeaveDetection()
 print("✅ Auto-join Pirates: ON")
 print("✅ FPS Cap: 15 FPS")
 print("✅ Crew Button: Auto-clicked once")
-print("✅ Accept Button: 2 pixels LEFT offset")
+print("✅ Accept Button: 2 pixels LEFT from center")
 print("✅ Invite Detection: ACTIVE")
 print("✅ Sync System: ACTIVE")
 print("========================================")
