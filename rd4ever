@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features)
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features + Anti-AFK)
 -- Web Panel: https://rd4ever.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -27,12 +27,56 @@ local runService = game:GetService("RunService")
 local lighting = game:GetService("Lighting")
 local workspace = game:GetService("Workspace")
 local starterGui = game:GetService("StarterGui")
+local virtualUser = game:GetService("VirtualUser")
 
 local SERVER_URL = "https://rd4ever.onrender.com"
 local hasInvite = false
 local hasAccepted = false
 local isRunning = true
 local crewButtonClicked = false
+
+-- ============ ANTI-AFK ============
+print("🔄 Starting Anti-AFK...")
+
+local function antiAFK()
+    -- Method 1: Idle bypass
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            virtualUser:CaptureController()
+            virtualUser:ClickButton2(Vector2.new())
+        end)
+    end)
+    
+    -- Method 2: Mouse movement every 30 seconds
+    task.spawn(function()
+        while isRunning do
+            task.wait(30)
+            pcall(function()
+                vim:SendMouseMoveEvent(100, 100, 0, game)
+                task.wait(0.1)
+                vim:SendMouseMoveEvent(200, 200, 0, game)
+            end)
+        end
+    end)
+    
+    -- Method 3: Character movement every 2 minutes
+    task.spawn(function()
+        while isRunning do
+            task.wait(120)
+            pcall(function()
+                local char = localPlayer.Character
+                if char and char.Humanoid then
+                    char.Humanoid:Move(Vector3.new(1, 0, 0))
+                    task.wait(0.5)
+                    char.Humanoid:Move(Vector3.new(-1, 0, 0))
+                end
+            end)
+        end
+    end)
+end
+
+antiAFK()
+print("✅ Anti-AFK active")
 
 -- ============ WORKING FPS CAP AT 15 ============
 local function lockFPS()
@@ -479,6 +523,9 @@ lockFPS()
 -- Enable white screen
 enableWhiteScreen()
 
+-- Start Anti-AFK
+antiAFK()
+
 -- Join Pirates
 pcall(function()
     commF:InvokeServer("SetTeam", "Pirates")
@@ -500,6 +547,7 @@ setupLeaveDetection()
 print("✅ Auto-join Pirates: ON")
 print("✅ FPS Cap: 15 FPS")
 print("✅ White Screen: ON")
+print("✅ Anti-AFK: ACTIVE")
 print("✅ Crew Button: Auto-clicked once")
 print("✅ Invite Detection: ACTIVE")
 print("✅ Sync System: ACTIVE")
