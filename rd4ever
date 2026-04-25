@@ -82,35 +82,6 @@ end
 antiAFK()
 print("✅ Anti-AFK active")
 
--- ============ WORKING FPS CAP AT 15 ============
-local function lockFPS()
-    print("🔒 Setting FPS cap to 15...")
-    
-    pcall(function()
-        local UserSettings = game:GetService("UserSettings")
-        local GameSettings = UserSettings:GetService("UserGameSettings")
-        GameSettings.FrameRateLimit = 15
-    end)
-    
-    pcall(function()
-        settings().Rendering.QualityLevel = 1
-    end)
-    
-    local frameTime = 1 / 15
-    local lastTime = tick()
-    
-    runService.RenderStepped:Connect(function()
-        local currentTime = tick()
-        local delta = currentTime - lastTime
-        if delta < frameTime then
-            task.wait(frameTime - delta)
-        end
-        lastTime = tick()
-    end)
-    
-    print("✅ FPS cap set to 15")
-end
-
 -- ============ WHITE SCREEN (Full White) ============
 local function enableWhiteScreen()
     print("🌕 Enabling white screen mode...")
@@ -521,9 +492,6 @@ print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
--- Apply FPS cap
-lockFPS()
-
 -- Enable white screen
 enableWhiteScreen()
 
@@ -549,7 +517,7 @@ pollSync()
 setupLeaveDetection()
 
 print("✅ Auto-join Pirates: ON")
-print("✅ FPS Cap: 15 FPS")
+print("✅ FPS Cap: 15 FPS (setfpscap)")
 print("✅ White Screen: ON")
 print("✅ Anti-AFK: ACTIVE")
 print("✅ Crew Button: Auto-clicked once")
