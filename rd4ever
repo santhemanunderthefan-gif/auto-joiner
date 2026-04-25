@@ -3,6 +3,10 @@
 
 repeat task.wait() until game:IsLoaded()
 
+-- ============ FPS CAP USING SETFPSCAP ============
+setfpscap(15)
+print("✅ FPS cap set to 15 using setfpscap")
+
 -- Detect executor request function
 local requestFunc = nil
 if Xeno and Xeno.HttpRequest then
