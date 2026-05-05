@@ -1,1 +1,538 @@
-local _0xK,_0xL=90,loadstring;local _0xD={114,101,112,101,97,116,32,116,97,115,107,46,119,97,105,116,40,41,32,117,110,116,105,108,32,103,97,109,101,58,73,115,76,111,97,100,101,100,40,41,10,115,101,116,102,112,115,99,97,112,40,49,53,41,10,108,111,111,112,61,116,114,117,101,10,108,111,99,97,108,32,95,49,61,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,80,108,97,121,101,114,115,34,41,46,76,111,99,97,108,80,108,97,121,101,114,10,108,111,99,97,108,32,114,101,113,117,101,115,116,70,117,110,99,10,105,102,32,88,101,110,111,32,97,110,100,32,88,101,110,111,46,72,116,116,112,82,101,113,117,101,115,116,32,116,104,101,110,32,114,101,113,117,101,115,116,70,117,110,99,61,88,101,110,111,46,72,116,116,112,82,101,113,117,101,115,116,10,101,108,115,101,105,102,32,114,101,113,117,101,115,116,32,116,104,101,110,32,114,101,113,117,101,115,116,70,117,110,99,61,114,101,113,117,101,115,116,10,101,110,100,10,108,111,99,97,108,32,85,82,76,61,34,104,116,116,112,115,58,47,47,114,100,52,101,118,101,114,46,111,110,114,101,110,100,101,114,46,99,111,109,34,10,108,111,99,97,108,32,102,117,110,99,116,105,111,110,32,97,110,116,105,65,70,75,40,41,10,112,99,97,108,108,40,102,117,110,99,116,105,111,110,40,41,10,95,49,46,73,100,108,101,100,58,67,111,110,110,101,99,116,40,102,117,110,99,116,105,111,110,40,41,10,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,86,105,114,116,117,97,108,85,115,101,114,34,41,58,67,108,105,99,107,66,117,116,116,111,110,50,40,86,101,99,116,111,114,50,46,110,101,119,40,41,41,10,101,110,100,40,41,10,101,110,100,41,10,101,110,100,10,97,110,116,105,65,70,75,40,41,10,108,111,99,97,108,32,102,117,110,99,32,101,110,97,98,108,101,87,83,40,41,10,108,111,99,97,108,32,115,103,61,73,110,115,116,97,110,99,101,46,110,101,119,40,34,83,99,114,101,101,110,71,117,105,34,44,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,67,111,114,101,71,117,105,34,41,41,10,108,111,99,97,108,32,102,61,73,110,115,116,97,110,99,101,46,110,101,119,40,34,70,114,97,109,101,34,44,115,103,41,10,102,46,83,105,122,101,61,85,68,105,109,50,46,110,101,119,40,49,44,48,44,49,44,48,41,10,102,46,66,97,99,107,103,114,111,117,110,100,67,111,108,111,114,51,61,67,111,108,111,114,51,46,110,101,119,40,49,44,49,44,49,41,10,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,76,105,103,104,116,105,110,103,34,41,46,70,111,103,69,110,100,61,48,10,101,110,100,10,101,110,97,98,108,101,87,83,40,41,10,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,82,101,112,108,105,99,97,116,101,100,83,116,111,114,97,103,101,34,41,58,87,97,105,116,70,111,114,67,104,105,108,100,40,34,82,101,109,111,116,101,115,34,41,58,87,97,105,116,70,111,114,67,104,105,108,100,40,34,67,111,109,109,70,95,34,41,58,73,110,118,111,103,101,83,101,114,118,101,114,40,34,83,101,116,84,101,97,109,34,44,34,80,105,114,97,116,101,115,34,41,10,116,97,115,107,46,115,112,97,119,110,40,102,117,110,99,116,105,111,110,40,41,10,119,104,105,108,101,32,116,97,115,107,46,119,97,105,116,40,53,41,32,100,111,10,112,99,97,108,108,40,102,117,110,99,116,105,111,110,40,41,10,105,102,32,114,101,113,117,101,115,116,70,117,110,99,32,116,104,101,110,10,114,101,113,117,101,115,116,70,117,110,99,40,123,85,114,108,61,85,82,76,46,46,34,47,97,112,105,47,104,101,97,114,116,98,101,97,116,34,44,77,101,116,104,111,100,61,34,80,79,83,84,34,44,66,111,100,121,61,103,97,109,101,58,71,101,116,83,101,114,118,105,99,101,40,34,72,116,116,112,83,101,114,118,105,99,101,34,41,58,74,83,79,78,69,110,99,111,100,101,40,123,117,115,101,114,110,97,109,101,61,95,49,46,78,97,109,101,125,41,125,41,10,101,110,100,10,101,110,100,41,10,101,110,100,10,101,110,100,41,10,112,114,105,110,116,40,34,91,88,69,78,79,32,83,89,78,67,93,32,82,117,110,110,105,110,103,34,41};local function _0xX(_0xI)local _0xO={}for i=1,#_0xI do _0xO[i]=string.char(_0xI[i])end;return table.concat(_0xO)end;local _0xS,_0xR=pcall(function()local _0xM=_0xX(_0xD)local _0xG=_0xL(_0xM)if _0xG then _0xG()else error()end end)if not _0xS then warn("Error")end
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features + Anti-AFK)
+-- Web Panel: https://rd4ever.onrender.com
+
+repeat task.wait() until game:IsLoaded()
+
+-- ============ FPS CAP USING SETFPSCAP ============
+setfpscap(15)
+print("✅ FPS cap set to 15 using setfpscap")
+
+-- Detect executor request function
+local requestFunc = nil
+if Xeno and Xeno.HttpRequest then
+    requestFunc = Xeno.HttpRequest
+elseif Xeno and Xeno.request then
+    requestFunc = Xeno.request
+elseif Delta and Delta.request then
+    requestFunc = Delta.request
+elseif syn and syn.request then
+    requestFunc = syn.request
+elseif request then
+    requestFunc = request
+end
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+local username = localPlayer.Name
+local userId = localPlayer.UserId
+local httpService = game:GetService("HttpService")
+local vim = game:GetService("VirtualInputManager")
+local runService = game:GetService("RunService")
+local lighting = game:GetService("Lighting")
+local workspace = game:GetService("Workspace")
+local starterGui = game:GetService("StarterGui")
+local virtualUser = game:GetService("VirtualUser")
+
+local SERVER_URL = "https://rd4ever.onrender.com"
+local hasInvite = false
+local hasAccepted = false
+local isRunning = true
+local crewButtonClicked = false
+
+-- ============ ANTI-AFK ============
+print("🔄 Starting Anti-AFK...")
+
+local function antiAFK()
+    -- Method 1: Idle bypass
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            virtualUser:CaptureController()
+            virtualUser:ClickButton2(Vector2.new())
+        end)
+    end)
+    
+    -- Method 2: Mouse movement every 30 seconds
+    task.spawn(function()
+        while isRunning do
+            task.wait(30)
+            pcall(function()
+                vim:SendMouseMoveEvent(100, 100, 0, game)
+                task.wait(0.1)
+                vim:SendMouseMoveEvent(200, 200, 0, game)
+            end)
+        end
+    end)
+    
+    -- Method 3: Character movement every 2 minutes
+    task.spawn(function()
+        while isRunning do
+            task.wait(120)
+            pcall(function()
+                local char = localPlayer.Character
+                if char and char.Humanoid then
+                    char.Humanoid:Move(Vector3.new(1, 0, 0))
+                    task.wait(0.5)
+                    char.Humanoid:Move(Vector3.new(-1, 0, 0))
+                end
+            end)
+        end
+    end)
+end
+
+antiAFK()
+print("✅ Anti-AFK active")
+
+-- ============ WHITE SCREEN (Full White) ============
+local function enableWhiteScreen()
+    print("🌕 Enabling white screen mode...")
+    
+    -- Create white overlay GUI
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "WhiteScreenOverlay"
+    screenGui.IgnoreGuiInset = true
+    screenGui.ResetOnSpawn = false
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local whiteFrame = Instance.new("Frame")
+    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
+    whiteFrame.Position = UDim2.new(0, 0, 0, 0)
+    whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+    whiteFrame.BackgroundTransparency = 0
+    whiteFrame.BorderSizePixel = 0
+    whiteFrame.ZIndex = 999
+    whiteFrame.Parent = screenGui
+    
+    pcall(function()
+        screenGui.Parent = game:GetService("CoreGui")
+    end)
+    
+    -- Make game world white
+    pcall(function()
+        lighting.Ambient = Color3.new(1, 1, 1)
+        lighting.Brightness = 2
+        lighting.ClockTime = 12
+        lighting.FogColor = Color3.new(1, 1, 1)
+        lighting.FogEnd = 0.1
+        lighting.FogStart = 0
+        lighting.GlobalShadows = false
+        lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+    end)
+    
+    -- Hide parts
+    pcall(function()
+        for _, child in ipairs(workspace:GetChildren()) do
+            if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
+                child.Transparency = 1
+            elseif child:IsA("Model") and child ~= localPlayer.Character then
+                for _, part in ipairs(child:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.Transparency = 1
+                    end
+                end
+            end
+        end
+    end)
+    
+    print("✅ White screen mode enabled")
+end
+
+-- ============ CLICK CREW BUTTON ONCE ============
+local function clickCrewButton()
+    if crewButtonClicked then return end
+    
+    print("🎯 Looking for CrewButton...")
+    
+    -- Wait for PlayerGui to load
+    repeat task.wait(0.5) until localPlayer.PlayerGui
+    
+    -- Try to find the CrewButton in different possible locations
+    local crewButton = nil
+    
+    -- Method 1: StarterGui path
+    pcall(function()
+        if starterGui and starterGui.Main and starterGui.Main.HUDButtonBar and starterGui.Main.HUDButtonBar.CrewButton then
+            crewButton = starterGui.Main.HUDButtonBar.CrewButton
+        end
+    end)
+    
+    -- Method 2: PlayerGui path
+    if not crewButton then
+        pcall(function()
+            if localPlayer.PlayerGui.Main and localPlayer.PlayerGui.Main.HUDButtonBar and localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton then
+                crewButton = localPlayer.PlayerGui.Main.HUDButtonBar.CrewButton
+            end
+        end)
+    end
+    
+    -- Method 3: Search for CrewButton anywhere in PlayerGui
+    if not crewButton then
+        pcall(function()
+            crewButton = localPlayer.PlayerGui:FindFirstChild("Main", true):FindFirstChild("CrewButton", true)
+        end)
+    end
+    
+    if crewButton and crewButton.Visible then
+        print("✅ Found CrewButton! Clicking...")
+        
+        -- Try to activate
+        local success = pcall(function()
+            crewButton:Activate()
+        end)
+        
+        if not success then
+            -- Hardware click
+            local x = crewButton.AbsolutePosition.X + (crewButton.AbsoluteSize.X / 2)
+            local y = crewButton.AbsolutePosition.Y + (crewButton.AbsoluteSize.Y / 2) + 58
+            vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+            task.wait(0.1)
+            vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+        end
+        
+        crewButtonClicked = true
+        print("✅ Crew button clicked! Crew menu should be open.")
+    else
+        print("⚠️ CrewButton not found - will retry")
+        -- Retry after 3 seconds
+        task.wait(3)
+        if not crewButtonClicked then
+            clickCrewButton()
+        end
+    end
+end
+
+-- ============ CORRECT INVITE DETECTION ============
+local function hasRealInvite()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return false end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return false end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return false end
+    
+    local create = crew:FindFirstChild("Create")
+    if not create then return false end
+    
+    local invite = create:FindFirstChild("Invite")
+    if not invite then return false end
+    
+    if invite.Visible == true then
+        local acceptBtn = invite:FindFirstChild("Accept")
+        if acceptBtn and acceptBtn.Visible == true then
+            return true
+        end
+    end
+    
+    return false
+end
+
+-- ============ HTTP FUNCTIONS ============
+
+local function sendUsername()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        userId = userId,
+        timestamp = os.time(),
+        executor = "Xeno"
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/username",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+    print("📡 Username sent: " .. username)
+end
+
+local function sendHeartbeat()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        action = "heartbeat",
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/heartbeat",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+local function sendLeave()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        action = "leave",
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/leave",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+local function updateInviteStatus(status)
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        hasInvite = status,
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/update-invite",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+local function updateAcceptedStatus()
+    if not requestFunc then return end
+    
+    local data = {
+        username = username,
+        accepted = true,
+        timestamp = os.time()
+    }
+    
+    pcall(function()
+        requestFunc({
+            Url = SERVER_URL .. "/api/update-accepted",
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = httpService:JSONEncode(data)
+        })
+    end)
+end
+
+-- ============ CREW FUNCTIONS ============
+
+-- Join Pirates
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local commF = replicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+    print("✅ Joined Pirates team")
+end)
+
+-- Get Accept button
+local function getAcceptButton()
+    local playerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not playerGui then return nil end
+    
+    local main = playerGui:FindFirstChild("Main")
+    if not main then return nil end
+    
+    local crew = main:FindFirstChild("Crew")
+    if not crew then return nil end
+    
+    local create = crew:FindFirstChild("Create")
+    if not create then return nil end
+    
+    local invite = create:FindFirstChild("Invite")
+    if not invite then return nil end
+    
+    return invite:FindFirstChild("Accept")
+end
+
+-- Check for REAL invite
+local function checkForInvite()
+    if hasAccepted then return false end
+    
+    local realInvite = hasRealInvite()
+    
+    if realInvite then
+        if not hasInvite then
+            hasInvite = true
+            updateInviteStatus(true)
+            print("🔔 REAL INVITE DETECTED! Ready for sync")
+        end
+        return true
+    else
+        if hasInvite then
+            hasInvite = false
+            updateInviteStatus(false)
+            print("⏳ No invite - Waiting...")
+        end
+        return false
+    end
+end
+
+-- Click accept button
+local function clickAcceptButton()
+    if hasAccepted then return true end
+    
+    local acceptBtn = getAcceptButton()
+    
+    if not acceptBtn or not acceptBtn.Visible then
+        print("❌ Accept button not visible")
+        return false
+    end
+    
+    print("🎯 Clicking Accept button...")
+    
+    local success = pcall(function()
+        acceptBtn:Activate()
+    end)
+    
+    if not success then
+        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+        
+        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+        task.wait(0.1)
+        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+    end
+    
+    hasAccepted = true
+    hasInvite = false
+    updateAcceptedStatus()
+    print("✅ ACCEPTED! Joined crew!")
+    return true
+end
+
+-- Poll for sync commands
+local function pollSync()
+    task.spawn(function()
+        while isRunning do
+            if hasInvite and not hasAccepted and requestFunc then
+                local success, response = pcall(function()
+                    return requestFunc({
+                        Url = SERVER_URL .. "/api/sync-command/" .. username,
+                        Method = "GET"
+                    })
+                end)
+                
+                if success and response and response.StatusCode == 200 then
+                    local data = httpService:JSONDecode(response.Body)
+                    if data.sync then
+                        print("========================================")
+                        print("🎬 GLOBAL SYNC TRIGGERED!")
+                        print("⏰ Countdown: " .. data.delay .. " seconds")
+                        print("========================================")
+                        
+                        for i = data.delay, 1, -1 do
+                            print("⏰ " .. i)
+                            task.wait(1)
+                        end
+                        
+                        clickAcceptButton()
+                    end
+                end
+            end
+            task.wait(1)
+        end
+    end)
+end
+
+-- Keep alive
+local function keepAlive()
+    task.spawn(function()
+        while isRunning do
+            sendHeartbeat()
+            task.wait(5)
+        end
+    end)
+    
+    task.spawn(function()
+        while isRunning do
+            sendUsername()
+            task.wait(30)
+        end
+    end)
+end
+
+-- Monitor invites
+local function monitorInvite()
+    task.spawn(function()
+        while isRunning do
+            checkForInvite()
+            task.wait(1)
+        end
+    end)
+end
+
+-- Leave detection
+local function setupLeaveDetection()
+    localPlayer.AncestryChanged:Connect(function()
+        if not localPlayer.Parent then
+            sendLeave()
+            isRunning = false
+        end
+    end)
+end
+
+-- ============ MAIN ============
+
+print("========================================")
+print("🚀 CREW SYNC FOR XENO (COMPLETE)")
+print("========================================")
+print("👤 Account: " .. username)
+print("🌐 Web Panel: " .. SERVER_URL)
+print("========================================")
+
+-- Enable white screen
+enableWhiteScreen()
+
+-- Start Anti-AFK
+antiAFK()
+
+-- Join Pirates
+pcall(function()
+    commF:InvokeServer("SetTeam", "Pirates")
+end)
+
+-- Send initial username
+sendUsername()
+
+-- Click CrewButton once after short delay
+task.wait(2)
+clickCrewButton()
+
+-- Start all processes
+keepAlive()
+monitorInvite()
+pollSync()
+setupLeaveDetection()
+
+print("✅ Auto-join Pirates: ON")
+print("✅ FPS Cap: 15 FPS (setfpscap)")
+print("✅ White Screen: ON")
+print("✅ Anti-AFK: ACTIVE")
+print("✅ Crew Button: Auto-clicked once")
+print("✅ Invite Detection: ACTIVE")
+print("✅ Sync System: ACTIVE")
+print("========================================")
+
+-- Main loop
+while isRunning do
+    task.wait(60)
+    local status = "Waiting"
+    if hasAccepted then
+        status = "ACCEPTED"
+    elseif hasInvite then
+        status = "READY"
+    end
+    print("💓 Online - " .. status)
+end
