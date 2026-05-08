@@ -83,59 +83,7 @@ end
 antiAFK()
 print("✅ Anti-AFK active")
 
--- ============ WHITE SCREEN (Full White) ============
-local function enableWhiteScreen()
-    print("🌕 Enabling white screen mode...")
-    
-    -- Create white overlay GUI
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "WhiteScreenOverlay"
-    screenGui.IgnoreGuiInset = true
-    screenGui.ResetOnSpawn = false
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local whiteFrame = Instance.new("Frame")
-    whiteFrame.Size = UDim2.new(1, 0, 1, 0)
-    whiteFrame.Position = UDim2.new(0, 0, 0, 0)
-    whiteFrame.BackgroundColor3 = Color3.new(1, 1, 1)
-    whiteFrame.BackgroundTransparency = 0
-    whiteFrame.BorderSizePixel = 0
-    whiteFrame.ZIndex = 999
-    whiteFrame.Parent = screenGui
-    
-    pcall(function()
-        screenGui.Parent = game:GetService("CoreGui")
-    end)
-    
-    -- Make game world white
-    pcall(function()
-        lighting.Ambient = Color3.new(1, 1, 1)
-        lighting.Brightness = 2
-        lighting.ClockTime = 12
-        lighting.FogColor = Color3.new(1, 1, 1)
-        lighting.FogEnd = 0.1
-        lighting.FogStart = 0
-        lighting.GlobalShadows = false
-        lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-    end)
-    
-    -- Hide parts
-    pcall(function()
-        for _, child in ipairs(workspace:GetChildren()) do
-            if child:IsA("BasePart") and child ~= workspace.CurrentCamera then
-                child.Transparency = 1
-            elseif child:IsA("Model") and child ~= localPlayer.Character then
-                for _, part in ipairs(child:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.Transparency = 1
-                    end
-                end
-            end
-        end
-    end)
-    
-    print("✅ White screen mode enabled")
-end
+
 
 -- ============ CLICK CREW BUTTON ONCE ============
 local function clickCrewButton()
