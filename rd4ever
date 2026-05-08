@@ -38,6 +38,7 @@ local hasInvite = false
 local hasAccepted = false
 local isRunning = true
 local crewButtonClicked = false
+local spamActive = false
 
 -- ============ ANTI-AFK ============
 print("🔄 Starting Anti-AFK...")
@@ -326,6 +327,57 @@ local function updateAcceptedStatus()
     end)
 end
 
+-- ============ SPAM CLICK FUNCTION (10 MINUTES AT 90ms) ============
+local function spamClickAccept()
+    if spamActive then return end
+    spamActive = true
+    
+    print("🔥 Starting SPAM CLICK for 10 minutes!")
+    print("🔥 Click interval: 90ms")
+    
+    local endTime = tick() + (10 * 60) -- 10 minutes
+    local clickCount = 0
+    local lastPrintTime = tick()
+    
+    while isRunning and tick() < endTime do
+        local acceptBtn = getAcceptButton()
+        
+        if acceptBtn then
+            -- Try Activate first
+            local success = pcall(function()
+                acceptBtn:Activate()
+            end)
+            
+            if not success then
+                -- Fallback to hardware click
+                pcall(function()
+                    local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+                    local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+                    vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+                    task.wait(0.01)
+                    vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+                end)
+            end
+            
+            clickCount = clickCount + 1
+        end
+        
+        -- Print progress every 10 seconds
+        if tick() - lastPrintTime >= 10 then
+            local elapsed = tick() - (endTime - (10 * 60))
+            local remaining = endTime - tick()
+            print(string.format("💥 Spam click progress: %d clicks | Time left: %.0f seconds", clickCount, remaining))
+            lastPrintTime = tick()
+        end
+        
+        -- Wait 90ms between clicks
+        task.wait(0.09)
+    end
+    
+    print("✅ Spam click finished! Total clicks: " .. clickCount)
+    spamActive = false
+end
+
 -- ============ CREW FUNCTIONS ============
 
 -- Join Pirates
@@ -379,7 +431,7 @@ local function checkForInvite()
     end
 end
 
--- Click accept button
+-- Click accept button (single click then start spam)
 local function clickAcceptButton()
     if hasAccepted then return true end
     
@@ -409,6 +461,10 @@ local function clickAcceptButton()
     hasInvite = false
     updateAcceptedStatus()
     print("✅ ACCEPTED! Joined crew!")
+    
+    -- Start spam clicking for 10 minutes at 90ms
+    spamClickAccept()
+    
     return true
 end
 
@@ -523,13 +579,16 @@ print("✅ Anti-AFK: ACTIVE")
 print("✅ Crew Button: Auto-clicked once")
 print("✅ Invite Detection: ACTIVE")
 print("✅ Sync System: ACTIVE")
+print("✅ POST-SYNC: 10 MIN SPAM @ 90ms")
 print("========================================")
 
 -- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
-    if hasAccepted then
+    if spamActive then
+        status = "SPAMMING"
+    elseif hasAccepted then
         status = "ACCEPTED"
     elseif hasInvite then
         status = "READY"
