@@ -548,8 +548,7 @@ print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
 print("========================================")
 
--- Enable white screen
-enableWhiteScreen()
+
 
 -- Start Anti-AFK
 antiAFK()
