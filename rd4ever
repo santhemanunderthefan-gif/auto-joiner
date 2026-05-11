@@ -1,4 +1,4 @@
--- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features + Anti-AFK + 10 MIN TURBO JOIN)
+-- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features + Anti-AFK)
 -- Web Panel: https://rd4ever.onrender.com
 
 repeat task.wait() until game:IsLoaded()
@@ -38,63 +38,6 @@ local hasInvite = false
 local hasAccepted = false
 local isRunning = true
 local crewButtonClicked = false
-local turboActive = false
-
--- ============ 10-MINUTE TURBO JOIN FUNCTION ============
-local function longTurboJoin()
-    if turboActive then return end
-    turboActive = true
-    
-    -- Get the Accept button path
-    local btn = localPlayer.PlayerGui.Main.Crew.Create.Invite.Accept
-    
-    if btn then
-        local duration = 600 -- 10 minutes
-        local startTime = tick()
-        local clickCount = 0
-        local lastLog = 0
-        
-        print("========================================")
-        print("!!! 10-MINUTE TURBO JOIN STARTED !!!")
-        print("========================================")
-        
-        while turboActive and (tick() - startTime) < duration do
-            -- Re-check position in case the window moved or resized
-            if btn.Visible and btn.AbsolutePosition.Y > 0 then
-                local x = btn.AbsolutePosition.X + (btn.AbsoluteSize.X / 2)
-                local y = btn.AbsolutePosition.Y + (btn.AbsoluteSize.Y / 2) + 58
-                
-                -- Hardware-level click
-                vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-                task.wait(0.01)
-                vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
-                
-                clickCount = clickCount + 1
-            end
-            
-            -- Console update every 30 seconds to keep it clean
-            if tick() - lastLog > 30 then
-                local remaining = math.floor(duration - (tick() - startTime))
-                local minutes = math.floor(remaining / 60)
-                local seconds = remaining % 60
-                print("[" .. username .. "] 🔥 Turbo clicks: " .. clickCount .. " | Time left: " .. minutes .. "m " .. seconds .. "s")
-                lastLog = tick()
-            end
-            
-            -- task.wait() ensures the game doesn't crash from the loop speed
-            task.wait()
-        end
-        
-        print("========================================")
-        print("✅ 10 MINUTES FINISHED!")
-        print("📊 Total clicks for " .. username .. ": " .. clickCount)
-        print("========================================")
-    else
-        warn("Accept button path not found. Is the invite menu open?")
-    end
-    
-    turboActive = false
-end
 
 -- ============ ANTI-AFK ============
 print("🔄 Starting Anti-AFK...")
@@ -436,7 +379,7 @@ local function checkForInvite()
     end
 end
 
--- Click accept button (single click then start 10-min turbo)
+-- Click accept button
 local function clickAcceptButton()
     if hasAccepted then return true end
     
@@ -449,13 +392,11 @@ local function clickAcceptButton()
     
     print("🎯 Clicking Accept button...")
     
-    -- Try Activate first
     local success = pcall(function()
         acceptBtn:Activate()
     end)
     
     if not success then
-        -- Fallback to hardware click
         local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
         local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
         
@@ -467,11 +408,7 @@ local function clickAcceptButton()
     hasAccepted = true
     hasInvite = false
     updateAcceptedStatus()
-    print("✅ First click done! Starting 10-MINUTE TURBO JOIN...")
-    
-    -- Start the 10-minute turbo join
-    task.spawn(longTurboJoin)
-    
+    print("✅ ACCEPTED! Joined crew!")
     return true
 end
 
@@ -550,7 +487,6 @@ end
 
 print("========================================")
 print("🚀 CREW SYNC FOR XENO (COMPLETE)")
-print("🔥 10-MINUTE TURBO JOIN INCLUDED")
 print("========================================")
 print("👤 Account: " .. username)
 print("🌐 Web Panel: " .. SERVER_URL)
@@ -587,16 +523,13 @@ print("✅ Anti-AFK: ACTIVE")
 print("✅ Crew Button: Auto-clicked once")
 print("✅ Invite Detection: ACTIVE")
 print("✅ Sync System: ACTIVE")
-print("✅ Post-Sync: 10-MINUTE TURBO JOIN")
 print("========================================")
 
 -- Main loop
 while isRunning do
     task.wait(60)
     local status = "Waiting"
-    if turboActive then
-        status = "TURBO JOIN 🔥"
-    elseif hasAccepted then
+    if hasAccepted then
         status = "ACCEPTED"
     elseif hasInvite then
         status = "READY"
