@@ -1,3 +1,12 @@
+Here is your updated script. The detection logic has been kept **completely untouched**, exactly as you wrote it.
+
+### What Was Updated:
+
+* **Auto-Clicker Loop:** When the global sync command is triggered from your Web Panel (`data.sync`), after the countdown finishes, the script executes a **5-minute (300 seconds) spam-click loop** on the `Accept` button.
+* **Interval:** Set to `task.wait(0.1)` (exactly **100ms** per click / 10 clicks per second).
+* **Multi-Clicking Safety:** Uses `VirtualInputManager` inside the loop to ensure hardware-level registration on every single tick for 5 minutes continuously.
+
+```lua
 -- CREW SYNC FOR XENO (Complete - White Screen + Auto Open Crew + All Features + Anti-AFK)
 -- Web Panel: https://rd4ever.onrender.com
 
@@ -379,37 +388,42 @@ local function checkForInvite()
     end
 end
 
--- Click accept button
-local function clickAcceptButton()
-    if hasAccepted then return true end
+-- Spam Accept Button for 5 Minutes (100ms interval)
+local function spamAcceptButton()
+    print("🎯 STARTING 5-MINUTE SPAM AUTO-CLICKER (100ms Interval)...")
     
-    local acceptBtn = getAcceptButton()
-    
-    if not acceptBtn or not acceptBtn.Visible then
-        print("❌ Accept button not visible")
-        return false
-    end
-    
-    print("🎯 Clicking Accept button...")
-    
-    local success = pcall(function()
-        acceptBtn:Activate()
-    end)
-    
-    if not success then
-        local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
-        local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
-        
-        vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-        task.wait(0.1)
-        vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
-    end
+    local startTime = tick()
+    local duration = 300 -- 5 minutes in seconds
+    local clickCount = 0
     
     hasAccepted = true
     hasInvite = false
     updateAcceptedStatus()
-    print("✅ ACCEPTED! Joined crew!")
-    return true
+    
+    while tick() - startTime < duration and isRunning do
+        local acceptBtn = getAcceptButton()
+        
+        if acceptBtn and acceptBtn.Visible then
+            pcall(function()
+                acceptBtn:Activate()
+            end)
+            
+            -- Hardware level backup click
+            pcall(function()
+                local x = acceptBtn.AbsolutePosition.X + (acceptBtn.AbsoluteSize.X / 2)
+                local y = acceptBtn.AbsolutePosition.Y + (acceptBtn.AbsoluteSize.Y / 2) + 58
+                
+                vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
+                vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
+            end)
+            
+            clickCount = clickCount + 1
+        end
+        
+        task.wait(0.1) -- 100ms Delay
+    end
+    
+    print("✅ SPAM FINISHED! Sent " .. clickCount .. " clicks over 5 minutes.")
 end
 
 -- Poll for sync commands
@@ -437,7 +451,8 @@ local function pollSync()
                             task.wait(1)
                         end
                         
-                        clickAcceptButton()
+                        -- Trigger the 5-Minute Auto Clicker
+                        spamAcceptButton()
                     end
                 end
             end
@@ -522,7 +537,7 @@ print("✅ White Screen: ON")
 print("✅ Anti-AFK: ACTIVE")
 print("✅ Crew Button: Auto-clicked once")
 print("✅ Invite Detection: ACTIVE")
-print("✅ Sync System: ACTIVE")
+print("✅ Sync System: ACTIVE (5-Min 100ms Auto-Clicker Ready)")
 print("========================================")
 
 -- Main loop
@@ -536,3 +551,5 @@ while isRunning do
     end
     print("💓 Online - " .. status)
 end
+
+```
